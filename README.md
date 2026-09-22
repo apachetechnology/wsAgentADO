@@ -2,8 +2,6 @@
 
 ### A. Design Primitives for Secure Agentic Systems
 
-| 
-
 | **Primitive** | **Existing Evidence** | **Demonstration** | 
 | **Bounded & scoped autonomy** | `config_agent.DEFAULT_ALLOWED_PERMISSIONS = {"READ","COMPUTE"}` vs `ALL_PERMISSIONS`; `CAgenticOrchestrator.__init__` takes `allowed_permissions` as a per-run parameter, not a global | Run the same goal twice — once under `DEFAULT_ALLOWED_PERMISSIONS`, once under `ALL_PERMISSIONS` — and log the delta in what gets executed vs. denied | 
 | **Revocable & time-bounded delegation** | `mMemory.reset_short_term()` called at the top of every `run()`; `SHORT_TERM_MEMORY_TURNS`-bounded deque; `CAgentMemory.quarantine_episode()` excludes a specific past episode from future recall | Show a delegation window = one `run()` invocation; demonstrate `quarantine_episode()` revoking influence of a specific prior (bad) episode on subsequent planning | 
