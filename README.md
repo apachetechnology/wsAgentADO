@@ -1,3 +1,36 @@
+# High Level Design
+
+### A. Design Primitives for Secure Agentic Systems
+
+| 
+
+| **Primitive** | **Existing Evidence** | **Demonstration** | 
+| **Bounded & scoped autonomy** | `config_agent.DEFAULT_ALLOWED_PERMISSIONS = {"READ","COMPUTE"}` vs `ALL_PERMISSIONS`; `CAgenticOrchestrator.__init__` takes `allowed_permissions` as a per-run parameter, not a global | Run the same goal twice — once under `DEFAULT_ALLOWED_PERMISSIONS`, once under `ALL_PERMISSIONS` — and log the delta in what gets executed vs. denied | 
+| **Revocable & time-bounded delegation** | `mMemory.reset_short_term()` called at the top of every `run()`; `SHORT_TERM_MEMORY_TURNS`-bounded deque; `CAgentMemory.quarantine_episode()` excludes a specific past episode from future recall | Show a delegation window = one `run()` invocation; demonstrate `quarantine_episode()` revoking influence of a specific prior (bad) episode on subsequent planning | 
+| **Graduated, blast-radius-aware tool access** | `CTool.mTool_permissions` tags per tool (`READ`, `COMPUTE`, `WRITE`, `NETWORK`, `PLOT`) in `agent_tools.py`; enforced by the permission-diff check in `CExecutionEnvironment.run_step()` | Classify all 9 registered tools into blast-radius tiers by permission set (e.g. `update_navs = WRITE + NETWORK = high`; `performance_review = READ + COMPUTE = low`) — this becomes a table in the paper | 
+
+### B. Agentic Control Points and Runtime Assurance
+
+| **Layer** | **ACP Already in Code** | **Runtime Assurance Evidence** | 
+| **Perception** | `MAX_DAILY_MOVE` plausibility bound in `update_navs()` | `test_perception_redteam.py` — spoofed-feed rejection (already committed, already passing) | 
+| **Reasoning** | Closed-vocabulary whitelist in `CTaskPlanningAgent.plan()`; `CAgentMemory.check_subgoal_bias()` flagging skewed subgoal distributions as a possible poisoning/injection signature | `test_reasoning_redteam.py` — adversarial-goal rejection | 
+| **Action/Execution** | Permission gate + fail-closed `try/except` in `run_step()` | Already the substance of the Case-Study-B mechanism (kept out of this paper per your "clean" call, but the general mechanism — not that specific incident — is fair game to cite as the ACP) | 
+| **Orchestration** | `_summarize_resource_use()` tally; `quarantine_episode()` as a revocation ACP | **New:** batch-run the framework and show `check_subgoal_bias()` firing on an artificially skewed episode set | 
+
+**Honest gap:** None of this is a human-in-the-loop escalation mechanism — there's no code path today where a control point pauses and waits for approval. If Section 2.3's "escalation ... human-in-the-loop or supervisory agents" bullet stays in, it needs to be scoped as proposed/specified rather than demonstrated, or built as new code in a separate session (can't do that under "don't modify the code" here anyway).
+
+### C. Operational Risk Metrics — Measurability Audit
+
+| **Metric** | **Measurable from Repo Today?** | **Source** | 
+| **Tool blast radius** | Yes | `mTool_permissions` per tool | 
+| **Delegation depth/duration** | Yes | Subgoal count + permission set per `run()`, via `_summarize_resource_use()` | 
+| **Autonomy persistence** | Yes (baseline = 0; permissions don't carry across runs) | `run()` resets state each call | 
+| **Escalation latency** | No | No escalation path exists | 
+| **Cross-agent propagation potential** | No | Not in `agentic_framework` (single orchestrator, no inter-agent messaging) | 
+
+— I'd rather put this table in the paper honestly than assert all five metrics are demonstrated — that's the exact pattern that drew fire on paper 1.
+
+**One conflict to flag on "clean":** `sim_malware_quarantine` and `sim_flight_booking` — the only multi-component setups that might otherwise fill the escalation/cross-agent gaps — are already claimed as PoC evidence in the magazine paper's Section 5/Table 5. Reusing them here would recreate the exact overlap problem you asked me to avoid. So my recommendation is to leave those two metrics as specified-but-not-yet-demonstrated in this paper, rather than reach into the `sim_*` folders.
 
 
 
