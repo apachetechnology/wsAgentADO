@@ -1,8 +1,7 @@
 """
 agent_config.py
 Configuration for the agentic-AI fund-management framework
-(see Paper Section 3.2, "Baseline architecture" - orchestration,
-perception, reasoning, action layers).
+("Baseline architecture" - orchestration, perception, reasoning, action layers).
 """
 
 from pathlib import Path
