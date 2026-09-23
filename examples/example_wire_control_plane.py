@@ -1,17 +1,11 @@
 """
-examples/example_wire_control_plane.py
 Reference wiring order for the additive api_Controls/ package, all six
-ACPs together. Mirrors agentic_console.py's own build_orchestrator() -
-imported, not duplicated - so this stays in sync with the tracked file
-automatically.
+ACPs together.
 
 Requires a local Ollama server with llama3.2:1b / gemma3:1b pulled, and
 the wsAgenticAIFW package importable (run this from the repo root, with
 api_Controls/ dropped in alongside agentic_framework/, api_Finance/,
-api_server/, config_agent.py). This script is NOT executed as part of
-code generation - Ollama and the mfapi.in NAV feed are both outside this
-sandbox's network allowlist - so treat it as reference wiring to run in
-your own environment, not as a tested artifact.
+api_server/, config_agent.py). 
 """
 from agentic_console import build_orchestrator
 from config_agent import DEFAULT_ALLOWED_PERMISSIONS, ALL_PERMISSIONS
