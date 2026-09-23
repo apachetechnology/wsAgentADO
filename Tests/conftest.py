@@ -2,12 +2,12 @@
 Tests/conftest.py
 Shared fixtures for wsAgentADO's own red-team suite
 (`test_perception_redteam.py`, `test_reasoning_redteam.py`). New,
-additive file — `test_control_plane_redteam.py` needed none of this
+additive file - `test_control_plane_redteam.py` needed none of this
 since it uses its own self-contained fakes; these two fixtures back the
 ORIGINAL red-team tests, which exercise the real framework classes
-end-to-end. Nothing here touches the network or a real Ollama server —
+end-to-end. Nothing here touches the network or a real Ollama server -
 each test monkeypatches the one call that would (`resolve_fund` /
-`get_response`) — and nothing touches production data, since
+`get_response`) - and nothing touches production data, since
 CHoldingsDatabase/CAgentMemory are both pointed at pytest's per-test
 `tmp_path` explicitly.
 """
@@ -26,7 +26,7 @@ class _FakeDBInterface:
     Stand-in for CDBInterface. The real class's __init__ always builds
     its OWN CHoldingsDatabase()/CFetchNAV() with no dependency-injection
     hook at all (no db_path parameter), so a real CDBInterface can't be
-    pointed at a temp DB — using one here would touch whatever sqlite
+    pointed at a temp DB - using one here would touch whatever sqlite
     file config_db.DB_PATH names in this checkout. Only `add_fund` calls
     mDBInterface (AddNewBaseFund), and neither red-team test below
     exercises `add_fund`, so a bare stand-in that fails loudly if ever
@@ -35,7 +35,7 @@ class _FakeDBInterface:
     def AddNewBaseFund(self, *args, **kwargs):
         raise NotImplementedError(
             "add_fund is not exercised by the perception/reasoning red-team "
-            "tests — if a new test needs it, give CDBInterface its own "
+            "tests - if a new test needs it, give CDBInterface its own "
             "temp-path CHoldingsDatabase/CFetchNAV rather than extending this stub."
         )
 
@@ -46,7 +46,7 @@ def tool_registry(tmp_path):
     A real CToolRegistry wired to a temp-file CHoldingsDatabase (so
     update_navs' actual MAX_DAILY_MOVE logic runs unmodified) and a
     real CFetchNAV (network calls are monkeypatched per-test on
-    `resolve_fund` — the method update_navs() actually calls, NOT
+    `resolve_fund` - the method update_navs() actually calls, NOT
     `get_latest_nav`).
     """
     db = CHoldingsDatabase(tmp_path / "holdings_test.db")
@@ -67,7 +67,7 @@ class _FakeOllamaServer:
     Bare stand-in for COllamaServer. `build_message` is real (it's a
     trivial dict-shaping helper the TPA calls before ever reaching the
     network), `get_response` deliberately raises unless a test
-    monkeypatches it — exactly what every existing reasoning red-team
+    monkeypatches it - exactly what every existing reasoning red-team
     case already does, so this never silently starts a real Ollama
     round-trip.
     """

@@ -1,7 +1,7 @@
 # Tests/test_reasoning_redteam.py
 #
 # Restored as-is (no logic bug found in this one, unlike
-# test_perception_redteam.py) — it only needed the `tpa` fixture that
+# test_perception_redteam.py) - it only needed the `tpa` fixture that
 # conftest.py now provides.
 from config_agent import SUBGOAL_CATALOG
 

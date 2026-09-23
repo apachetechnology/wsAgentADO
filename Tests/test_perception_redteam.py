@@ -2,8 +2,8 @@
 #
 # Two fixes applied vs. the version this was restored from:
 #   1. `tool_registry.get("update_navs").func(...)` -> `.mTool_func(...)`
-#      — CTool's callable field is `mTool_func`; there is no `func` attribute.
-#   2. Monkeypatches `resolve_fund` instead of `get_latest_nav` —
+#      - CTool's callable field is `mTool_func`; there is no `func` attribute.
+#   2. Monkeypatches `resolve_fund` instead of `get_latest_nav` -
 #      update_navs() calls `self.mFetcher.resolve_fund(fund_name)` directly;
 #      `get_latest_nav` is a level lower (resolve_fund calls it internally,
 #      after a fuzzy name match against the scheme cache succeeds), so
