@@ -1,5 +1,52 @@
 # High Level Design
 
+## Layout
+
+```
+api_Controls/
+  bus.py                     Observability & Metrics Bus
+  signal_adapters.py         ACP-1 / ACP-2 / ACP-3 / ACP-6 signal adapters
+  autonomy_boundary.py       ACP-4 policy (irreversibility, cost, persistence)
+  controlled_orchestrator.py CControlledOrchestrator (ACP-4 wired into the run loop)
+  delegation_ledger.py        ACP-5 DelegationGrant / DelegationLedger
+  tool_access_gate.py         ACP-5 CToolAccessGate, Authorize(a,t,r) literally
+  controlled_execution.py     CControlledExecutionEnvironment (ACP-5 wired into run_step)
+  closed_loop.py              ACP-1/ACP-6 signals -> ACP-5 circuit breakers
+  metrics_readout.py          renders bus.rollups() for Paper 3 Section 5
+  __init__.py
+Tests/
+  test_control_plane_redteam.py   Expiry / cascade-revoke / breaker-trip red-team cases
+examples/
+  example_wire_control_plane.py   full wiring order, all six ACPs together
+```
+
+## ACP -> module map
+
+| ACP | Table 1 mechanism | Where it's implemented here |
+|---|---|---|
+| ACP-1 | Plausibility-bound NAV validation | `signal_adapters.py` wraps `update_navs`'s existing `rejected`/`failures` return values |
+| ACP-2 | SUBGOAL_CATALOG allow-list, rejects full-catalog echo | `signal_adapters.py` wraps `plan()`, detects the echo via its existing console print |
+| ACP-3 | Grounded-facts constraint, reject ungrounded currency | `signal_adapters.py` wraps `reflect()` - **see bug note below** |
+| ACP-4 | Autonomy boundary service | `autonomy_boundary.py` + `controlled_orchestrator.py` |
+| ACP-5 | Permission gate + delegation ledger + tool access gate | `delegation_ledger.py` + `tool_access_gate.py` + `controlled_execution.py` |
+| ACP-6 | `check_subgoal_bias()` diagnostic signal | `signal_adapters.py` wraps `record_episode()` and calls it (baseline never does) |
+
+## Testing
+
+- Verified: `Tests/test_control_plane_redteam.py` - 22/22 passing, standalone (no Ollama, no live DB, no network).
+
+In brief `examples/example_wire_control_plane.py`.
+
+1. Build the baseline `CAgenticOrchestrator` exactly as `agentic_console.py` does.
+2. Create the bus (Phase 0).
+3. `CSignalAdapters(bus).attach(orchestrator)` - Phase 1 (ACP-1/2/3/6).
+4. `DelegationLedger.bootstrap_from_allowed_permissions(...)`, then wrap
+   `orchestrator.mExecution` in `CControlledExecutionEnvironment` - Phase 3 (ACP-5).
+5. `CClosedLoopPolicy(bus, gate)` - Phase 4.
+6. Wrap the whole thing in `CControlledOrchestrator` - Phase 2 (ACP-4).
+
+This script is for reference, not a tested artifact: Ollama and `mfapi.in` are both outside this sandbox's network allowlist, so it could not be executed end-to-end here. Everything else (`api_Controls/` itself and the Phase 5 tests) was compiled and run against the real cloned repo.
+
 ## A. Design Primitives for Secure Agentic Systems
 | **Primitive** | **Methodology** | **Unit Test** | 
 |---|---|---|
@@ -17,101 +64,10 @@
 | **Action/Execution** | Permission gate + fail-closed `try/except` in `run_step()` | Already the substance of the Case-Study-B mechanism (kept out of this paper per your "clean" call, but the general mechanism - not that specific incident - is fair game to cite as the ACP) | 
 | **Orchestration** | `_summarize_resource_use()` tally; `quarantine_episode()` as a revocation ACP | Batch-run the framework and show `check_subgoal_bias()` firing on an artificially skewed episode set | 
 
-### C. Operational Risk Metrics - Measurability Audit
-
-| **Metric** | **Measurable from Repo Today?** | **Source** | 
-|---|---|---|
-| **Tool blast radius** | Yes | `mTool_permissions` per tool | 
-| **Delegation depth/duration** | Yes | Subgoal count + permission set per `run()`, via `_summarize_resource_use()` | 
-| **Autonomy persistence** | Yes (baseline = 0; permissions don't carry across runs) | `run()` resets state each call | 
-| **Escalation latency** | No | No escalation path exists | 
-| **Cross-agent propagation potential** | No | Not in `agentic_framework` (single orchestrator, no inter-agent messaging) | 
-
-- I'd rather put this table in the paper honestly than assert all five metrics are demonstrated - that's the exact pattern that drew fire on paper 1.
-
-**One conflict to flag on "clean":** `sim_malware_quarantine` and `sim_flight_booking` - the only multi-component setups that might otherwise fill the escalation/cross-agent gaps - are already claimed as PoC evidence in the magazine paper's Section 5/Table 5. Reusing them here would recreate the exact overlap problem you asked me to avoid. So my recommendation is to leave those two metrics as specified-but-not-yet-demonstrated in this paper, rather than reach into the `sim_*` folders.
-
-
-
-# api_Controls/ - additive ACP-1..6 implementation for Paper 3
-
-Implements all six Agentic Control Points from Paper 3 Section 4.2
-("Engineering and Assuring Secure Agentic AI Systems") as an **additive**
-package that composes over `apachetechnology/wsAgenticAIFW` without
-editing a single tracked file.
-
-- Reference commit: `61f74eba4107751db612966030b44db620947bfd` (this is
-  also the current `main` HEAD as of 2026-09-20 - no drift to reconcile).
-- Verified: `git diff` against the clone is empty after dropping this
-  package in; `git status --short` shows only new, untracked paths.
-- Verified: `Tests/test_control_plane_redteam.py` - 22/22 passing,
-  standalone (no Ollama, no live DB, no network).
-
-## Layout
-
-```
-api_Controls/
-  bus.py                    Phase 0 - Observability & Metrics Bus
-  signal_adapters.py         Phase 1 - ACP-1 / ACP-2 / ACP-3 / ACP-6 signal adapters
-  autonomy_boundary.py        Phase 2 - ACP-4 policy (irreversibility, cost, persistence)
-  controlled_orchestrator.py  Phase 2 - CControlledOrchestrator (ACP-4 wired into the run loop)
-  delegation_ledger.py        Phase 3 - ACP-5 DelegationGrant / DelegationLedger
-  tool_access_gate.py         Phase 3 - ACP-5 CToolAccessGate, Authorize(a,t,r) literally
-  controlled_execution.py     Phase 3 - CControlledExecutionEnvironment (ACP-5 wired into run_step)
-  closed_loop.py              Phase 4 - ACP-1/ACP-6 signals -> ACP-5 circuit breakers
-  metrics_readout.py          Phase 6 - renders bus.rollups() for Paper 3 Section 5
-  __init__.py
-Tests/
-  test_control_plane_redteam.py   Phase 5 - expiry / cascade-revoke / breaker-trip red-team cases
-examples/
-  example_wire_control_plane.py   full wiring order, all six ACPs together
-```
-
-Drop `api_Controls/` and `Tests/test_control_plane_redteam.py` into the
-repo root, alongside `agentic_framework/`, `api_Finance/`, `api_server/`,
-and `config_agent.py`.
-
-## ACP -> module map (Table 1)
-
-| ACP | Table 1 mechanism | Where it's implemented here |
-|---|---|---|
-| ACP-1 | Plausibility-bound NAV validation | `signal_adapters.py` wraps `update_navs`'s existing `rejected`/`failures` return values |
-| ACP-2 | SUBGOAL_CATALOG allow-list, rejects full-catalog echo | `signal_adapters.py` wraps `plan()`, detects the echo via its existing console print |
-| ACP-3 | Grounded-facts constraint, reject ungrounded currency | `signal_adapters.py` wraps `reflect()` - **see bug note below** |
-| ACP-4 | Autonomy boundary service | `autonomy_boundary.py` + `controlled_orchestrator.py` |
-| ACP-5 | Permission gate + delegation ledger + tool access gate | `delegation_ledger.py` + `tool_access_gate.py` + `controlled_execution.py` |
-| ACP-6 | `check_subgoal_bias()` diagnostic signal | `signal_adapters.py` wraps `record_episode()` and calls it (baseline never does) |
-
-Phase 4 (`closed_loop.py`) is the part of Section 4.2's closing paragraph
-that turns ACP-1/ACP-6 from "logged" into "enforceable": repeated ACP-1
-rejections trip a tool-level breaker; an ACP-6 bias warning trips a
-run-level breaker, both via `CToolAccessGate.trip_*_breaker()`.
-
-## Wiring order
-
-See `examples/example_wire_control_plane.py`. In brief:
-
-1. Build the baseline `CAgenticOrchestrator` exactly as `agentic_console.py` does.
-2. Create the bus (Phase 0).
-3. `CSignalAdapters(bus).attach(orchestrator)` - Phase 1 (ACP-1/2/3/6).
-4. `DelegationLedger.bootstrap_from_allowed_permissions(...)`, then wrap
-   `orchestrator.mExecution` in `CControlledExecutionEnvironment` - Phase 3 (ACP-5).
-5. `CClosedLoopPolicy(bus, gate)` - Phase 4.
-6. Wrap the whole thing in `CControlledOrchestrator` - Phase 2 (ACP-4).
-
-This script is reference wiring, not a tested artifact: Ollama and
-`mfapi.in` are both outside this sandbox's network allowlist, so it
-could not be executed end-to-end here. Everything else (`api_Controls/`
-itself and the Phase 5 tests) was compiled and run against the real
-cloned repo.
-
+------------------
 ## Two honesty-critical findings from inspecting the live code
 
-These affect how ACP-3 and ACP-5 should be described going forward -
-worth a look before the next Paper 3 revision, alongside the three
-honesty-critical notes already carried in the draft (ACP-1 trust
-boundary siting, the delegation-primitive gap, ACP-6 being diagnostic-
-only).
+These affect how ACP-3 and ACP-5 should be described going forward worth a look before the next Paper 3 revision, alongside the three honesty-critical notes already carried in the draft (ACP-1 trust boundary siting, the delegation-primitive gap, ACP-6 being diagnostic-only).
 
 **1. `reflect()`'s currency check never actually runs (ACP-3).**
 `CTaskPlanningAgent._reject_ungrounded_currency` is declared
@@ -163,19 +119,8 @@ Ollama, or database dependency. Scenario replay against
 `nbAgenticConsole.ipynb` remains a separate, manual validation step, as
 the Phase 5 plan specifies.
 
+
 Sandeep
-
-## Package Layout
-
-```text
-control_plane/
-  bus.py                      # Observability & Metrics Bus
-  autonomy_boundary.py        # ACP-4
-  delegation_ledger.py        # ACP-5a
-  tool_access_gate.py         # ACP-5b - implements Authorize(a,t,r)
-  controlled_orchestrator.py  # composes CAgenticOrchestrator's parts, inserts ACP-4
-  controlled_execution.py     # wraps CExecutionEnvironment, inserts ACP-5
-Tests/test_control_plane_redteam.py   # new file, existing red-team tests untouched
 ```
 
 ## Phased Plan
@@ -197,3 +142,22 @@ Tests/test_control_plane_redteam.py   # new file, existing red-team tests untouc
 
 # TODO list
 **Gap:** None of this is a human-in-the-loop escalation mechanism - there's no code path today where a control point pauses and waits for approval. If Section 2.3's "escalation ... human-in-the-loop or supervisory agents" bullet stays in, it needs to be scoped as proposed/specified rather than demonstrated, or built as new code in a separate session (can't do that under "don't modify the code" here anyway).
+
+### C. Operational Risk Metrics - Measurability Audit
+
+| **Metric** | **Measurable from Repo Today?** | **Source** | 
+|---|---|---|
+| **Tool blast radius** | Yes | `mTool_permissions` per tool | 
+| **Delegation depth/duration** | Yes | Subgoal count + permission set per `run()`, via `_summarize_resource_use()` | 
+| **Autonomy persistence** | Yes (baseline = 0; permissions don't carry across runs) | `run()` resets state each call | 
+| **Escalation latency** | No | No escalation path exists | 
+| **Cross-agent propagation potential** | No | Not in `agentic_framework` (single orchestrator, no inter-agent messaging) | 
+
+- I'd rather put this table in the paper honestly than assert all five metrics are demonstrated - that's the exact pattern that drew fire on paper 1.
+
+**One conflict to flag on "clean":** `sim_malware_quarantine` and `sim_flight_booking` - the only multi-component setups that might otherwise fill the escalation/cross-agent gaps - are already claimed as PoC evidence in the magazine paper's Section 5/Table 5. Reusing them here would recreate the exact overlap problem you asked me to avoid. So my recommendation is to leave those two metrics as specified-but-not-yet-demonstrated in this paper, rather than reach into the `sim_*` folders.
+
+Phase 4 (`closed_loop.py`) is the part of Section 4.2's closing paragraph
+that turns ACP-1/ACP-6 from "logged" into "enforceable": repeated ACP-1
+rejections trip a tool-level breaker; an ACP-6 bias warning trips a
+run-level breaker, both via `CToolAccessGate.trip_*_breaker()`.
