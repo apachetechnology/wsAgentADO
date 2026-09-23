@@ -3,22 +3,6 @@ Tests/test_control_plane_redteam.py
 Phase 5: adversarial / edge-case tests for the additive api_Controls/
 package - expiry, cascade-revoke, and breaker-trip cases, per the Phase
 5 build plan.
-
-NOTE ON SCOPE: the reference commit (61f74eba4107) has no
-Tests/conftest.py, so the `tpa` / `tool_registry` fixtures referenced by
-the EXISTING Tests/test_reasoning_redteam.py and
-Tests/test_perception_redteam.py are not actually defined anywhere in
-the repository - those two files cannot be collected by pytest as-is in
-this commit. Rather than depend on missing fixtures, this suite is
-self-contained: api_Controls/signal_adapters.py is exercised against
-minimal stand-ins that match the exact shapes it reads/writes
-(mTool_func, .plan/.reflect, .record_episode/.check_subgoal_bias), and
-api_Controls/{delegation_ledger,tool_access_gate,autonomy_boundary,
-closed_loop}.py are exercised directly with no framework dependency,
-Ollama, or database at all - so this suite runs anywhere with `pytest`
-and the api_Controls/ package importable. Full end-to-end validation
-against live nbAgenticConsole.ipynb scenarios remains a separate,
-manual step, as the Phase 5 plan specifies.
 """
 import time
 
