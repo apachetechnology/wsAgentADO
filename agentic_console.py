@@ -1,17 +1,12 @@
 """
-agentic_console.py
-Entry point for the agentic fund-management framework (Paper Section
-3.2 baseline architecture) built on top of the existing holdings
-tracker. Mirrors the style of console.py / nav_fetcher.py's own
-__main__ blocks.
+Entry point for the agentic fund-management framework 
 
 Run:
     python agentic_console.py
-
-Requires an Ollama server running locally with the models named in
-agentic_framework/agent_config.py (MODEL_TPA, MODEL_TSA) pulled, e.g.:
-    ollama pull llama3.2:1b
-    ollama pull gemma3:1b
+    Requires an Ollama server running locally with the models named in
+    agentic_framework/agent_config.py (MODEL_TPA, MODEL_TSA) pulled, e.g.:
+        ollama pull llama3.2:1b
+        ollama pull gemma3:1b
 """
 
 from api_server.Ollama_server import COllamaServer

@@ -1,6 +1,22 @@
 # High Level Design
 
-## Layout
+## A. Design Primitives for Secure Agentic Systems
+| **Primitive** | **Methodology** | **Unit Test** | 
+|---|---|---|
+| **Bounded & scoped autonomy** | Run the same goal twice - once under `DEFAULT_ALLOWED_PERMISSIONS`, once under `ALL_PERMISSIONS` - and log the delta in what gets executed vs. denied. | Set `config_agent.DEFAULT_ALLOWED_PERMISSIONS = {"READ","COMPUTE"}` and `ALL_PERMISSIONS`; `CAgenticOrchestrator.__init__` takes `allowed_permissions` as a per-run parameter to test the goal | 
+| **Revocable & time-bounded delegation** | Show a delegation window = one `run()` invocation; demonstrate `quarantine_episode()` revoking influence of a specific prior (bad) episode on subsequent planning. | `mMemory.reset_short_term()` called at the top of every `run()`; `SHORT_TERM_MEMORY_TURNS`-bounded deque; `CAgentMemory.quarantine_episode()` excludes a specific past episode from future recall | 
+| **Graduated, blast-radius-aware tool access** | Classify all 9 registered tools into blast-radius tiers by permission set (e.g., `update_navs = WRITE + NETWORK = high`; `performance_review = READ + COMPUTE = low`) - this becomes a table in the paper. | `CTool.mTool_permissions` tags per tool (`READ`, `COMPUTE`, `WRITE`, `NETWORK`, `PLOT`) in `agent_tools.py`; enforced by the permission-diff check in `CExecutionEnvironment.run_step()` | 
+
+## B. Agentic Control Points and Runtime Assurance
+
+| **Layer** | **ACP** | **Runtime Assurance Evidence** | 
+|---|---|---|
+| **Perception** | `MAX_DAILY_MOVE` plausibility bound in `update_navs()` | `test_perception_redteam.py` - spoofed-feed rejection (already committed, already passing) | 
+| **Reasoning** | Closed-vocabulary whitelist in `CTaskPlanningAgent.plan()`; `CAgentMemory.check_subgoal_bias()` flagging skewed subgoal distributions as a possible poisoning/injection signature | `test_reasoning_redteam.py` - adversarial-goal rejection | 
+| **Action/Execution** | Permission gate + fail-closed `try/except` in `run_step()` | Already the substance of the Case-Study-B mechanism (kept out of this paper per your "clean" call, but the general mechanism - not that specific incident - is fair game to cite as the ACP) | 
+| **Orchestration** | `_summarize_resource_use()` tally; `quarantine_episode()` as a revocation ACP | Batch-run the framework and show `check_subgoal_bias()` firing on an artificially skewed episode set | 
+
+# Layout
 
 ```
 api_Controls/
@@ -46,22 +62,6 @@ In brief `examples/example_wire_control_plane.py`.
 6. Wrap the whole thing in `CControlledOrchestrator` - Phase 2 (ACP-4).
 
 This script is for reference, not a tested artifact: Ollama and `mfapi.in` are both outside this sandbox's network allowlist, so it could not be executed end-to-end here. Everything else (`api_Controls/` itself and the Phase 5 tests) was compiled and run against the real cloned repo.
-
-## A. Design Primitives for Secure Agentic Systems
-| **Primitive** | **Methodology** | **Unit Test** | 
-|---|---|---|
-| **Bounded & scoped autonomy** | Run the same goal twice - once under `DEFAULT_ALLOWED_PERMISSIONS`, once under `ALL_PERMISSIONS` - and log the delta in what gets executed vs. denied. | Set `config_agent.DEFAULT_ALLOWED_PERMISSIONS = {"READ","COMPUTE"}` and `ALL_PERMISSIONS`; `CAgenticOrchestrator.__init__` takes `allowed_permissions` as a per-run parameter to test the goal | 
-| **Revocable & time-bounded delegation** | Show a delegation window = one `run()` invocation; demonstrate `quarantine_episode()` revoking influence of a specific prior (bad) episode on subsequent planning. | `mMemory.reset_short_term()` called at the top of every `run()`; `SHORT_TERM_MEMORY_TURNS`-bounded deque; `CAgentMemory.quarantine_episode()` excludes a specific past episode from future recall | 
-| **Graduated, blast-radius-aware tool access** | Classify all 9 registered tools into blast-radius tiers by permission set (e.g., `update_navs = WRITE + NETWORK = high`; `performance_review = READ + COMPUTE = low`) - this becomes a table in the paper. | `CTool.mTool_permissions` tags per tool (`READ`, `COMPUTE`, `WRITE`, `NETWORK`, `PLOT`) in `agent_tools.py`; enforced by the permission-diff check in `CExecutionEnvironment.run_step()` | 
-
-## B. Agentic Control Points and Runtime Assurance
-
-| **Layer** | **ACP** | **Runtime Assurance Evidence** | 
-|---|---|---|
-| **Perception** | `MAX_DAILY_MOVE` plausibility bound in `update_navs()` | `test_perception_redteam.py` - spoofed-feed rejection (already committed, already passing) | 
-| **Reasoning** | Closed-vocabulary whitelist in `CTaskPlanningAgent.plan()`; `CAgentMemory.check_subgoal_bias()` flagging skewed subgoal distributions as a possible poisoning/injection signature | `test_reasoning_redteam.py` - adversarial-goal rejection | 
-| **Action/Execution** | Permission gate + fail-closed `try/except` in `run_step()` | Already the substance of the Case-Study-B mechanism (kept out of this paper per your "clean" call, but the general mechanism - not that specific incident - is fair game to cite as the ACP) | 
-| **Orchestration** | `_summarize_resource_use()` tally; `quarantine_episode()` as a revocation ACP | Batch-run the framework and show `check_subgoal_bias()` firing on an artificially skewed episode set | 
 
 ------------------
 ## Two honesty-critical findings from inspecting the live code
