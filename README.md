@@ -62,22 +62,10 @@ In brief `examples/example_wire_control_plane.py`.
 5. `CClosedLoopPolicy(bus, gate)` - Phase 4.
 6. Wrap the whole thing in `CControlledOrchestrator` - Phase 2 (ACP-4).
 
-This script is for reference, not a tested artifact: Ollama and `mfapi.in` are both outside this sandbox's network allowlist, so it could not be executed end-to-end here. Everything else (`api_Controls/` itself and the Phase 5 tests) was compiled and run against the real cloned repo.
+This script is for reference, not a tested artifact: Ollama and `mfapi.in` are both outside this sandbox's network allowlist, so it could not be executed end-to-end here. 
 
-------------------
-## Two honesty-critical findings from inspecting the live code
-
-These affect how ACP-3 and ACP-5 should be described going forward worth a look before the next Paper 3 revision, alongside the three honesty-critical notes already carried in the draft (ACP-1 trust boundary siting, the delegation-primitive gap, ACP-6 being diagnostic-only).
-
-**1. `reflect()`'s currency check never actually runs (ACP-3).**
-`CTaskPlanningAgent._reject_ungrounded_currency` is declared `@staticmethod` with signature `(self, text)`, but called as `self._reject_ungrounded_currency(raw)`. A `@staticmethod` strips the implicit `self` binding even through an instance, so that call always raises `TypeError: missing 1 required positional argument: 'text'`
-(confirmed directly against the cloned file - see `signal_adapters.py`'s module docstring for the repro). That `TypeError` is swallowed by `reflect()`'s own `except Exception: summary = None`, so **in the current commit, `reflect()` always falls through to the deterministic, grounded-facts summary** - the LLM-authored, currency-checked branch never executes, regardless of what the model actually said. The net effect Table 1 describes (no `$` figures reach the user) still holds, but only as a side effect of an exception path, not via the explicit check. The ACP-3 signal adapter reports `used_grounded_fallback`, which will read `True` for
-essentially every real run until this is fixed in a tracked file - which this package deliberately does not do.
-
-**2. A second, independent bug in the same file affects ACP-5's error handling.** `CExecutionEnvironment.run_step()`'s missing-required-args branch constructs `CExecutionRecord(..., error=f"...")`, but the dataclass field is `mError`, not `error`. If that branch is ever hit, it raises `TypeError` instead of returning a "skipped" record, and that exception is **not** caught by `run_step()`'s own try/except (which only wraps the tool-function call itself). `controlled_execution.py` defensively catches this at the ACP-5 gate boundary and converts it into a same-shaped `"error"` record, so a single bad tool-chain step can't take down an otherwise-controlled run - but the underlying bug is still there in the tracked file.
-
-Also worth noting: `check_subgoal_bias()` is defined in `agent_memory.py` but is not called from anywhere in the baseline framework (no caller in `agentic_framework/`, `Tests/`, or the `sim_*` scenarios) - the ACP-6 signal adapter is its first real caller.
-
-## Phase 5 test-suite scope
-
-The reference commit has no `Tests/conftest.py`, so the `tpa` /`tool_registry` fixtures that `Tests/test_reasoning_redteam.py` and `Tests/test_perception_redteam.py` reference aren't defined anywhere - those two files can't be collected by `pytest` as-is in this commit. `test_control_plane_redteam.py` is therefore self-contained: it uses minimal stand-ins matching the exact shapes `signal_adapters.py` reads/writes, and exercises `delegation_ledger.py` / `tool_access_gate.py` / `autonomy_boundary.py` / `closed_loop.py` directly with no framework, Ollama, or database dependency. Scenario replay against `nbAgenticConsole.ipynb` remains a separate, manual validation step, as the Phase 5 plan specifies.
+| **File** | **What it does** |
+|---|---|
+| **`Tests/conftest.py`** | Supplies the two pytest fixtures the other two test files need but that didn't exist anywhere in the repo before (`tool_registry`, `tpa`). Without this file, pytest can't even collect those tests — it errors immediately with "fixture not found." It builds a *real* `CToolRegistry`/`CTaskPlanningAgent` against temp-file databases, so the tests exercise your actual `update_navs()`/`plan()` logic rather than a mock of it, without ever touching your real `_DB/` files or the network. |
+| **`Tests/test_perception_redteam.py`** | Tests that `update_navs()` rejects spoofed/implausible NAV feeds (a crash to near-zero, a 100,000x spike, a null value) — the ACP-1 mechanism. This is the file with the three bugs we found (`.func`→`.mTool_func`, missing fixture, and patching the wrong fetcher method) — now fixed, plus one extra case confirming a normal small NAV move still goes through. |
+| **`Tests/test_reasoning_redteam.py`** | Tests that `plan()` strips out attacker-controlled subgoals (e.g. `"delete_everything"`) that aren't in `SUBGOAL_CATALOG`, even when the (simulated) LLM response tries to inject them — the ACP-2 whitelist mechanism. This one had no actual bug, just needed the fixture. |
