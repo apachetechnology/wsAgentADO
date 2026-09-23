@@ -46,7 +46,7 @@ examples/
 | ACP-3 | Grounded-facts constraint, reject ungrounded currency | `signal_adapters.py` wraps `reflect()` |
 | ACP-4 | Autonomy boundary service | `autonomy_boundary.py` + `controlled_orchestrator.py` |
 | ACP-5 | Permission gate + delegation ledger + tool access gate | `delegation_ledger.py` + `tool_access_gate.py` + `controlled_execution.py` |
-| ACP-6 | `check_subgoal_bias()` diagnostic signal | `signal_adapters.py` wraps `record_episode()` and calls it (baseline never does) |
+| ACP-6 | `check_subgoal_bias()` diagnostic signal | `signal_adapters.py` wraps `record_episode()` and calls it |
 
 ## Testing
 
@@ -66,6 +66,6 @@ This script is for reference, not a tested artifact: Ollama and `mfapi.in` are b
 
 | **File** | **What it does** |
 |---|---|
-| **`Tests/conftest.py`** | Supplies the two pytest fixtures the other two test files need but that didn't exist anywhere in the repo before (`tool_registry`, `tpa`). Without this file, pytest can't even collect those tests — it errors immediately with "fixture not found." It builds a *real* `CToolRegistry`/`CTaskPlanningAgent` against temp-file databases, so the tests exercise your actual `update_navs()`/`plan()` logic rather than a mock of it, without ever touching your real `_DB/` files or the network. |
-| **`Tests/test_perception_redteam.py`** | Tests that `update_navs()` rejects spoofed/implausible NAV feeds (a crash to near-zero, a 100,000x spike, a null value) — the ACP-1 mechanism. This is the file with the three bugs we found (`.func`→`.mTool_func`, missing fixture, and patching the wrong fetcher method) — now fixed, plus one extra case confirming a normal small NAV move still goes through. |
-| **`Tests/test_reasoning_redteam.py`** | Tests that `plan()` strips out attacker-controlled subgoals (e.g. `"delete_everything"`) that aren't in `SUBGOAL_CATALOG`, even when the (simulated) LLM response tries to inject them — the ACP-2 whitelist mechanism. This one had no actual bug, just needed the fixture. |
+| **`Tests/conftest.py`** | Supplies the two pytest fixtures the other two test files need but that didn't exist anywhere in the repo before (`tool_registry`, `tpa`). Without this file, pytest can't even collect those tests - it errors immediately with "fixture not found." It builds a *real* `CToolRegistry`/`CTaskPlanningAgent` against temp-file databases, so the tests exercise your actual `update_navs()`/`plan()` logic rather than a mock of it, without ever touching your real `_DB/` files or the network. |
+| **`Tests/test_perception_redteam.py`** | Tests that `update_navs()` rejects spoofed/implausible NAV feeds (a crash to near-zero, a 100,000x spike, a null value) - the ACP-1 mechanism. |
+| **`Tests/test_reasoning_redteam.py`** | Tests that `plan()` strips out attacker-controlled subgoals (e.g. `"delete_everything"`) that aren't in `SUBGOAL_CATALOG`, even when the (simulated) LLM response tries to inject them - the ACP-2 whitelist mechanism. |
