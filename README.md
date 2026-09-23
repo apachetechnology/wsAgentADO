@@ -54,7 +54,6 @@ This script is for reference, not a tested artifact: Ollama and `mfapi.in` are b
 | **Revocable & time-bounded delegation** | Show a delegation window = one `run()` invocation; demonstrate `quarantine_episode()` revoking influence of a specific prior (bad) episode on subsequent planning. | `mMemory.reset_short_term()` called at the top of every `run()`; `SHORT_TERM_MEMORY_TURNS`-bounded deque; `CAgentMemory.quarantine_episode()` excludes a specific past episode from future recall | 
 | **Graduated, blast-radius-aware tool access** | Classify all 9 registered tools into blast-radius tiers by permission set (e.g., `update_navs = WRITE + NETWORK = high`; `performance_review = READ + COMPUTE = low`) - this becomes a table in the paper. | `CTool.mTool_permissions` tags per tool (`READ`, `COMPUTE`, `WRITE`, `NETWORK`, `PLOT`) in `agent_tools.py`; enforced by the permission-diff check in `CExecutionEnvironment.run_step()` | 
 
-
 ## B. Agentic Control Points and Runtime Assurance
 
 | **Layer** | **ACP** | **Runtime Assurance Evidence** | 
