@@ -39,7 +39,7 @@ examples/
 
 ## ACP -> module map
 
-| ACP | Table 1 mechanism | Where it's implemented here |
+| ACP | Table 1 mechanism | Implemented details |
 |---|---|---|
 | ACP-1 | Plausibility-bound NAV validation | `signal_adapters.py` wraps `update_navs`'s existing `rejected`/`failures` return values |
 | ACP-2 | SUBGOAL_CATALOG allow-list, rejects full-catalog echo | `signal_adapters.py` wraps `plan()`, detects the echo via its existing console print |
@@ -70,51 +70,14 @@ This script is for reference, not a tested artifact: Ollama and `mfapi.in` are b
 These affect how ACP-3 and ACP-5 should be described going forward worth a look before the next Paper 3 revision, alongside the three honesty-critical notes already carried in the draft (ACP-1 trust boundary siting, the delegation-primitive gap, ACP-6 being diagnostic-only).
 
 **1. `reflect()`'s currency check never actually runs (ACP-3).**
-`CTaskPlanningAgent._reject_ungrounded_currency` is declared
-`@staticmethod` with signature `(self, text)`, but called as
-`self._reject_ungrounded_currency(raw)`. A `@staticmethod` strips the
-implicit `self` binding even through an instance, so that call always
-raises `TypeError: missing 1 required positional argument: 'text'`
-(confirmed directly against the cloned file - see
-`signal_adapters.py`'s module docstring for the repro). That
-`TypeError` is swallowed by `reflect()`'s own `except Exception:
-summary = None`, so **in the current commit, `reflect()` always falls
-through to the deterministic, grounded-facts summary** - the
-LLM-authored, currency-checked branch never executes, regardless of
-what the model actually said. The net effect Table 1 describes (no `$`
-figures reach the user) still holds, but only as a side effect of an
-exception path, not via the explicit check. The ACP-3 signal adapter
-reports `used_grounded_fallback`, which will read `True` for
-essentially every real run until this is fixed in a tracked file -
-which this package deliberately does not do.
+`CTaskPlanningAgent._reject_ungrounded_currency` is declared `@staticmethod` with signature `(self, text)`, but called as `self._reject_ungrounded_currency(raw)`. A `@staticmethod` strips the implicit `self` binding even through an instance, so that call always raises `TypeError: missing 1 required positional argument: 'text'`
+(confirmed directly against the cloned file - see `signal_adapters.py`'s module docstring for the repro). That `TypeError` is swallowed by `reflect()`'s own `except Exception: summary = None`, so **in the current commit, `reflect()` always falls through to the deterministic, grounded-facts summary** - the LLM-authored, currency-checked branch never executes, regardless of what the model actually said. The net effect Table 1 describes (no `$` figures reach the user) still holds, but only as a side effect of an exception path, not via the explicit check. The ACP-3 signal adapter reports `used_grounded_fallback`, which will read `True` for
+essentially every real run until this is fixed in a tracked file - which this package deliberately does not do.
 
-**2. A second, independent bug in the same file affects ACP-5's error
-handling.** `CExecutionEnvironment.run_step()`'s missing-required-args
-branch constructs `CExecutionRecord(..., error=f"...")`, but the
-dataclass field is `mError`, not `error`. If that branch is ever hit,
-it raises `TypeError` instead of returning a "skipped" record, and
-that exception is **not** caught by `run_step()`'s own try/except
-(which only wraps the tool-function call itself). `controlled_execution.py`
-defensively catches this at the ACP-5 gate boundary and converts it
-into a same-shaped `"error"` record, so a single bad tool-chain step
-can't take down an otherwise-controlled run - but the underlying bug is
-still there in the tracked file.
+**2. A second, independent bug in the same file affects ACP-5's error handling.** `CExecutionEnvironment.run_step()`'s missing-required-args branch constructs `CExecutionRecord(..., error=f"...")`, but the dataclass field is `mError`, not `error`. If that branch is ever hit, it raises `TypeError` instead of returning a "skipped" record, and that exception is **not** caught by `run_step()`'s own try/except (which only wraps the tool-function call itself). `controlled_execution.py` defensively catches this at the ACP-5 gate boundary and converts it into a same-shaped `"error"` record, so a single bad tool-chain step can't take down an otherwise-controlled run - but the underlying bug is still there in the tracked file.
 
-Also worth noting: `check_subgoal_bias()` is defined in `agent_memory.py`
-but is not called from anywhere in the baseline framework (no caller in
-`agentic_framework/`, `Tests/`, or the `sim_*` scenarios) - the ACP-6
-signal adapter is its first real caller.
+Also worth noting: `check_subgoal_bias()` is defined in `agent_memory.py` but is not called from anywhere in the baseline framework (no caller in `agentic_framework/`, `Tests/`, or the `sim_*` scenarios) - the ACP-6 signal adapter is its first real caller.
 
 ## Phase 5 test-suite scope
 
-The reference commit has no `Tests/conftest.py`, so the `tpa` /
-`tool_registry` fixtures that `Tests/test_reasoning_redteam.py` and
-`Tests/test_perception_redteam.py` reference aren't defined anywhere -
-those two files can't be collected by `pytest` as-is in this commit.
-`test_control_plane_redteam.py` is therefore self-contained: it uses
-minimal stand-ins matching the exact shapes `signal_adapters.py`
-reads/writes, and exercises `delegation_ledger.py` / `tool_access_gate.py`
-/ `autonomy_boundary.py` / `closed_loop.py` directly with no framework,
-Ollama, or database dependency. Scenario replay against
-`nbAgenticConsole.ipynb` remains a separate, manual validation step, as
-the Phase 5 plan specifies.
+The reference commit has no `Tests/conftest.py`, so the `tpa` /`tool_registry` fixtures that `Tests/test_reasoning_redteam.py` and `Tests/test_perception_redteam.py` reference aren't defined anywhere - those two files can't be collected by `pytest` as-is in this commit. `test_control_plane_redteam.py` is therefore self-contained: it uses minimal stand-ins matching the exact shapes `signal_adapters.py` reads/writes, and exercises `delegation_ledger.py` / `tool_access_gate.py` / `autonomy_boundary.py` / `closed_loop.py` directly with no framework, Ollama, or database dependency. Scenario replay against `nbAgenticConsole.ipynb` remains a separate, manual validation step, as the Phase 5 plan specifies.
