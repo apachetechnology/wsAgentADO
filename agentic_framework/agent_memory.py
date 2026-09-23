@@ -2,7 +2,7 @@
 memory.py
 CAgentMemory - long-term (episodic) memory backing the Task Planning
 Agent's reflective loop, plus a lightweight short-term memory used by
-the Task Setup Agent (Paper Fig. 1: "Long-term Memory", "Short-term
+the Task Setup Agent ("Long-term Memory", "Short-term
 Memory", "Feedback Loops").
 
 Long-term memory is a small sqlite log of past orchestrator runs

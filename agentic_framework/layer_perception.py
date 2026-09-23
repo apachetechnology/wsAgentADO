@@ -1,6 +1,6 @@
 """
 perception.py
-CPerceptionLayer - Paper Fig. 1 "Perception Layer": initiates task
+CPerceptionLayer - "Perception Layer": initiates task
 processing once tasks are scheduled by the orchestration layer, and
 acquires external and contextual data from sensors, databases, and
 digital interfaces.

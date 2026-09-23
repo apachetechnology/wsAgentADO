@@ -1,6 +1,6 @@
 """
 execution.py
-CExecutionEnvironment - Paper Fig. 1 "Execution Environment": sandboxed
+CExecutionEnvironment - "Execution Environment": sandboxed
 runtime, permission system, state management, and error handling for
 the Action layer. Tool-chain steps produced by the Task Setup Agent are
 run here, never invoked directly.
@@ -80,7 +80,7 @@ class CExecutionEnvironment:
         if missing_args:
             oExeRecord = CExecutionRecord(
                 tool_name, args, "skipped",
-                error=f"Missing required argument(s) for '{tool_name}': "
+                mError=f"Missing required argument(s) for '{tool_name}': "
                     f"{', '.join(missing_args)}. Pass them via "
                     f"run(..., extra_args={{'<subgoal>': {{...}}}}).",
             )

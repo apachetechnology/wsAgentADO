@@ -1,6 +1,6 @@
 """
 orchestrator.py
-CAgenticOrchestrator - Paper Fig. 1 "Orchestration Layer": manages
+CAgenticOrchestrator - "Orchestration Layer": manages
 workflow execution by assigning tasks, optimizing resource allocation,
 and facilitating inter-agent communication (TPA <-> TSA <-> Action).
 Serves as the strategic control-and-coordination hub for the whole run.

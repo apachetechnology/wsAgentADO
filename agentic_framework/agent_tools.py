@@ -1,6 +1,6 @@
 """
 tools.py
-Action layer - "Tool Integration" (Paper Fig. 1): API connectors,
+Action layer - "Tool Integration": API connectors,
 document/report generation, and database interfaces, exposed as a
 uniform registry the Task Setup Agent can wire into tool-chains and
 the execution environment can invoke under sandboxed permissions.
