@@ -3,21 +3,19 @@
 ## A. Design Primitives for Secure Agentic Systems
 | **Primitive** | **Methodology** | **Unit Test** | 
 |---|---|---|
-| **Bounded & scoped autonomy** | Run the same goal twice - once under `DEFAULT_ALLOWED_PERMISSIONS`, once under `ALL_PERMISSIONS` - and log the delta in what gets executed vs. denied. | `config_agent.DEFAULT_ALLOWED_PERMISSIONS = {"READ","COMPUTE"}` vs. `ALL_PERMISSIONS`; `CAgenticOrchestrator.__init__` takes `allowed_permissions` as a per-run parameter, not a global | 
+| **Bounded & scoped autonomy** | Run the same goal twice - once under `DEFAULT_ALLOWED_PERMISSIONS`, once under `ALL_PERMISSIONS` - and log the delta in what gets executed vs. denied. | Set `config_agent.DEFAULT_ALLOWED_PERMISSIONS = {"READ","COMPUTE"}` and `ALL_PERMISSIONS`; `CAgenticOrchestrator.__init__` takes `allowed_permissions` as a per-run parameter to test the goal | 
 | **Revocable & time-bounded delegation** | Show a delegation window = one `run()` invocation; demonstrate `quarantine_episode()` revoking influence of a specific prior (bad) episode on subsequent planning. | `mMemory.reset_short_term()` called at the top of every `run()`; `SHORT_TERM_MEMORY_TURNS`-bounded deque; `CAgentMemory.quarantine_episode()` excludes a specific past episode from future recall | 
 | **Graduated, blast-radius-aware tool access** | Classify all 9 registered tools into blast-radius tiers by permission set (e.g., `update_navs = WRITE + NETWORK = high`; `performance_review = READ + COMPUTE = low`) - this becomes a table in the paper. | `CTool.mTool_permissions` tags per tool (`READ`, `COMPUTE`, `WRITE`, `NETWORK`, `PLOT`) in `agent_tools.py`; enforced by the permission-diff check in `CExecutionEnvironment.run_step()` | 
 
 
 ## B. Agentic Control Points and Runtime Assurance
 
-| **Layer** | **ACP Already in Code** | **Runtime Assurance Evidence** | 
+| **Layer** | **ACP** | **Runtime Assurance Evidence** | 
 |---|---|---|
 | **Perception** | `MAX_DAILY_MOVE` plausibility bound in `update_navs()` | `test_perception_redteam.py` - spoofed-feed rejection (already committed, already passing) | 
 | **Reasoning** | Closed-vocabulary whitelist in `CTaskPlanningAgent.plan()`; `CAgentMemory.check_subgoal_bias()` flagging skewed subgoal distributions as a possible poisoning/injection signature | `test_reasoning_redteam.py` - adversarial-goal rejection | 
 | **Action/Execution** | Permission gate + fail-closed `try/except` in `run_step()` | Already the substance of the Case-Study-B mechanism (kept out of this paper per your "clean" call, but the general mechanism - not that specific incident - is fair game to cite as the ACP) | 
-| **Orchestration** | `_summarize_resource_use()` tally; `quarantine_episode()` as a revocation ACP | **New:** batch-run the framework and show `check_subgoal_bias()` firing on an artificially skewed episode set | 
-
-**Gap:** None of this is a human-in-the-loop escalation mechanism - there's no code path today where a control point pauses and waits for approval. If Section 2.3's "escalation ... human-in-the-loop or supervisory agents" bullet stays in, it needs to be scoped as proposed/specified rather than demonstrated, or built as new code in a separate session (can't do that under "don't modify the code" here anyway).
+| **Orchestration** | `_summarize_resource_use()` tally; `quarantine_episode()` as a revocation ACP | Batch-run the framework and show `check_subgoal_bias()` firing on an artificially skewed episode set | 
 
 ### C. Operational Risk Metrics - Measurability Audit
 
@@ -195,3 +193,7 @@ Tests/test_control_plane_redteam.py   # new file, existing red-team tests untouc
 * **Phase 4 - Close the loop.** Feed ACP-1's rejections and ACP-6's bias signal into `ToolAccessGate` as $C(a,r)$ triggers (repeated NAV rejections or sustained subgoal skew $\rightarrow$ trip breaker, tighten `allowed_permissions` via the ledger).
 * **Phase 5 - Validation.** New `test_control_plane_redteam.py`: reuse the adversarial fixtures from the existing two red-team test files, add cases for expiry (grant used after window closes), cascade revoke (parent revoked $\rightarrow$ child denied), and breaker trip (repeated rejections $\rightarrow$ subsequent calls denied without re-triggering the underlying check). Run end-to-end against `nbAgenticConsole.ipynb` scenarios for a real (not synthetic) trace.
 * **Phase 6 - Metrics readout.** `bus.py` rollups become the numbers for the paper's Operational Risk Metrics section (Section 5), computed from Phase 5's runs.
+
+
+# TODO list
+**Gap:** None of this is a human-in-the-loop escalation mechanism - there's no code path today where a control point pauses and waits for approval. If Section 2.3's "escalation ... human-in-the-loop or supervisory agents" bullet stays in, it needs to be scoped as proposed/specified rather than demonstrated, or built as new code in a separate session (can't do that under "don't modify the code" here anyway).
