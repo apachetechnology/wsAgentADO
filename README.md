@@ -31,28 +31,27 @@
 # Layout
 
 ```
-api_Controls/
+console_control_framework.py   full stack implementaion, all six ACPs together
+
+agentic_framework_controlled/
   bus.py                     Observability & Metrics Bus
   signal_adapters.py         ACP-1 / ACP-2 / ACP-3 / ACP-6 signal adapters
   autonomy_boundary.py       ACP-4 policy (irreversibility, cost, persistence)
   controlled_orchestrator.py CControlledOrchestrator (ACP-4 wired into the run loop)
-  delegation_ledger.py        ACP-5 DelegationGrant / DelegationLedger
-  tool_access_gate.py         ACP-5 CToolAccessGate, Authorize(a,t,r) literally
-  controlled_execution.py     CControlledExecutionEnvironment (ACP-5 wired into run_step)
-  closed_loop.py              ACP-1/ACP-6 signals -> ACP-5 circuit breakers
-  metrics_readout.py          renders bus.rollups() for Paper 3 Section 5
+  delegation_ledger.py       ACP-5 DelegationGrant / DelegationLedger
+  tool_access_gate.py        ACP-5 CToolAccessGate, Authorize(a,t,r) literally
+  controlled_execution.py    CControlledExecutionEnvironment (ACP-5 wired into run_step)
+  closed_loop.py             ACP-1/ACP-6 signals -> ACP-5 circuit breakers
+  metrics_readout.py         renders bus.rollups() for Section 5
   __init__.py
+
 Tests/
-  test_control_plane_redteam.py   Expiry / cascade-revoke / breaker-trip red-team cases
-examples/
-  example_wire_control_plane.py   full wiring order, all six ACPs together
+  test_controlled_framework.py   Expiry / cascade-revoke / breaker-trip red-team cases
 ```
 
-## Testing
+## FW Evaluation
 
-- Verified: `Tests/test_control_plane_redteam.py` - 22/22 passing, standalone (no Ollama, no live DB, no network).
-
-In brief `examples/example_wire_control_plane.py`.
+In brief `console_control_framework.py`.
 
 1. Build the baseline `CAgenticOrchestrator` exactly as `agentic_console.py` does.
 2. Create the bus (Phase 0).
@@ -62,10 +61,11 @@ In brief `examples/example_wire_control_plane.py`.
 5. `CClosedLoopPolicy(bus, gate)` - Phase 4.
 6. Wrap the whole thing in `CControlledOrchestrator` - Phase 2 (ACP-4).
 
-This script is for reference, not a tested artifact: Ollama and `mfapi.in` are both outside this sandbox's network allowlist, so it could not be executed end-to-end here. 
+## Testing
 
 | **File** | **What it does** |
 |---|---|
+|**`Tests/test_controlled_framework.py`**|Verified:  - 22/22 passing, standalone (no Ollama, no live DB, no network).|
 | **`Tests/conftest.py`** | Supplies the two pytest fixtures the other two test files need but that didn't exist anywhere in the repo before (`tool_registry`, `tpa`). Without this file, pytest can't even collect those tests - it errors immediately with "fixture not found." It builds a *real* `CToolRegistry`/`CTaskPlanningAgent` against temp-file databases, so the tests exercise your actual `update_navs()`/`plan()` logic rather than a mock of it, without ever touching your real `_DB/` files or the network. |
 | **`Tests/test_perception.py`** | Tests that `update_navs()` rejects spoofed/implausible NAV feeds (a crash to near-zero, a 100,000x spike, a null value) - the ACP-1 mechanism. |
 | **`Tests/test_reasoning.py`** | Tests that `plan()` strips out attacker-controlled subgoals (e.g. `"delete_everything"`) that aren't in `SUBGOAL_CATALOG`, even when the (simulated) LLM response tries to inject them - the ACP-2 whitelist mechanism. |
