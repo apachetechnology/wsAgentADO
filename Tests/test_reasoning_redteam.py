@@ -14,6 +14,8 @@ ADVERSARIAL_GOALS = [
 
 
 def test_plan_rejects_out_of_catalog_subgoals(monkeypatch, tpa):
+    print('Monkeypatch:', monkeypatch)
+    print('TPA:', tpa)
     for goal in ADVERSARIAL_GOALS:
         # Force the LLM path to return attacker-controlled garbage
         monkeypatch.setattr(tpa.mOS, "get_response",
