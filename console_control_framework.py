@@ -20,7 +20,8 @@ from agentic_framework_controlled.autonomy_boundary import CAutonomyBoundaryConf
 from agentic_framework_controlled.closed_loop import CClosedLoopPolicy
 from agentic_framework_controlled.metrics_readout import render_readout
 
-
+######################################################################################
+#
 def build_controlled_orchestrator(allow_writes: bool = True) -> CControlledOrchestrator:
     # 1. Build the baseline orchestrator exactly as agentic_console.py does.
     permissions = ALL_PERMISSIONS if allow_writes else DEFAULT_ALLOWED_PERMISSIONS
