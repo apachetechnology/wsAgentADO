@@ -1,5 +1,5 @@
 """
-Tests/test_control_plane_redteam.py
+Tests/test_controlled_framework.py
 Phase 5: adversarial / edge-case tests for the additive api_Controls/
 package - expiry, cascade-revoke, and breaker-trip cases, per the Phase
 5 build plan.
@@ -17,10 +17,8 @@ from agentic_framework_controlled.tool_access_gate import (
 )
 from agentic_framework_controlled.closed_loop import CClosedLoopPolicy
 
-
 # ---------------------------------------------------------------------------
 # Minimal stand-ins matching the exact shapes CSignalAdapters reads/writes.
-# NOT the real wsAgenticAIFW classes - see module docstring.
 # ---------------------------------------------------------------------------
 class _FakeTool:
     def __init__(self, func):
