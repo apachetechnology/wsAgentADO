@@ -6,37 +6,8 @@ Non-invasive instrumentation: every adapter here composes over an
 already-constructed CAgenticOrchestrator by substituting a wrapping
 closure for a public, mutable attribute (`mTool_func` on a CTool,
 `.plan` / `.reflect` on the TPA, `.record_episode` on CAgentMemory).
-No wsAgenticAIFW source file is edited - a `git diff` of the cloned
-repository stays empty. Every adapter calls the ORIGINAL implementation
-first and only *observes* what it already returns or prints; it never
-changes what the framework decides, only what gets recorded about that
-decision (matches Phase 1 of the build plan: "adapters capture existing
-return values/rejections into the bus, no logic changes").
 
------------------------------------------------------------------------
-KNOWN UPSTREAM LIMITATION, verified against commit 61f74eba4107 (the
-current `main` HEAD of apachetechnology/wsAgenticAIFW as of 2026-09-20):
-
-`CTaskPlanningAgent._reject_ungrounded_currency` (agentic_framework/
-layer_reasoning.py) is declared `@staticmethod` with signature
-`(self, text)`. It is called as `self._reject_ungrounded_currency(raw)`.
-A `@staticmethod` strips the implicit `self`-binding entirely, even when
-accessed through an instance, so that call always raises
-`TypeError: _reject_ungrounded_currency() missing 1 required positional
-argument: 'text'`. That TypeError is swallowed by `reflect()`'s own
-`except Exception: summary = None`, so in the CURRENT codebase
-`reflect()` ALWAYS falls through to the deterministic, grounded-facts
-summary - the LLM-authored, currency-checked branch never actually
-executes, regardless of what the model said. Practically, this means
-the ACP-3 "reject ungrounded currency() validation" mechanism currently
-achieves its intended *outcome* (no `$`/`USD` figures ever reach the
-user) only as a side effect of the exception path, not via the explicit
-check Table 1 describes. The ACP-3 adapter below still reports a
-meaningful signal (whether the deterministic/grounded fallback fired),
-but expect it to read ~100% for every real run until/unless this
-upstream signature bug is fixed in a tracked file (which this package
-deliberately does not do, per "do not modify the code").
------------------------------------------------------------------------
+Adapters capture existing return values/rejections into the bus.
 """
 from __future__ import annotations
 
@@ -70,7 +41,8 @@ def _tee_stdout(fn, *args, **kwargs):
     sys.stdout.write(captured)
     return result, captured
 
-
+##########################################################################
+##
 class CSignalAdapters:
     """
     Attaches ACP-1/2/3/6 observability adapters to a live
@@ -128,7 +100,7 @@ class CSignalAdapters:
     # name dropped without triggering the full-echo path) produces no
     # console signal in the baseline and is therefore NOT surfaced here;
     # detecting it would require duplicating plan()'s private JSON-parsing
-    # helper against the raw LLM response (see Tests/test_reasoning_redteam.py's
+    # helper against the raw LLM response (see Tests/test_reasoning.py's
     # own monkeypatch-and-assert pattern for how that would be done).
     def _wrap_acp2_plan(self, orchestrator, run_id) -> None:
         tpa = orchestrator.mTPA
@@ -149,8 +121,7 @@ class CSignalAdapters:
 
     # -- ACP-3: reasoning / reflect() -----------------------------------------
     # Table 1: "Grounded-facts constraint and reject ungrounded currency()
-    # validation." See the module docstring for the upstream bug that makes
-    # the deterministic-fallback path fire unconditionally right now.
+    # validation."
     def _wrap_acp3_reflect(self, orchestrator, run_id) -> None:
         tpa = orchestrator.mTPA
         original_reflect = tpa.reflect
@@ -172,10 +143,8 @@ class CSignalAdapters:
 
     # -- ACP-6: memory / check_subgoal_bias() ---------------------------------
     # Table 1: "check_subgoal_bias() and memory-derived anomaly signals."
-    # check_subgoal_bias() is defined in agent_memory.py but is not called
-    # from anywhere in the baseline framework (verified against commit
-    # 61f74eba4107 - no caller in agentic_framework/, Tests/, or the sim_*
-    # scenarios). This adapter is therefore its first caller in practice,
+    # check_subgoal_bias() is defined in agent_memory.py. 
+    # This adapter is therefore its first caller in practice,
     # invoked right after each record_episode() so the signal is checked
     # once per completed run, as Table 1's "episodic recording and recall"
     # boundary implies.

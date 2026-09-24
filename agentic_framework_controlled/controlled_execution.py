@@ -48,18 +48,12 @@ class CControlledExecutionEnvironment:
             self._execution.mListExeRecord.append(record)
             return record
 
+        # SG: This try/except is retained purely as a general safety net in case    
+        # any tool's own mTool_func implementation raises unexpectedly, 
+        # so one bad tool-chain step cannot abort the whole orchestrator run.
         try:
             return self._execution.run_step(tool_name, args)
         except Exception as e:
-            # Defensive: run_step()'s missing-required-args branch passes an
-            # unsupported `error=` keyword to CExecutionRecord (which only
-            # defines `mError`), so that specific path raises TypeError
-            # instead of returning a record - a second, independent bug in
-            # the same file as the reflect() one documented in
-            # signal_adapters.py, also left unpatched per "do not modify
-            # the code". Converting any such crash into a same-shaped
-            # error record keeps one bad tool-chain step from aborting the
-            # whole orchestrator run.
             record = CExecutionRecord(tool_name, args, "error", mError=str(e))
             self._execution.mListExeRecord.append(record)
             return record

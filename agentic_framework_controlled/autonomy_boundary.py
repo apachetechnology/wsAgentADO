@@ -18,7 +18,7 @@ are deliberately kept separate from tool_access_gate.py's own
 TOOL_PRIVILEGE_TIER / TOOL_IMPACT_COST maps: ACP-4 gates a single
 decision before a subgoal is even set up for execution, while ACP-5
 (tool_access_gate.py) gates the actual tool invocation and accumulates
-impact over a run - see Paper 3 Section 5's open item on how a
+impact over a run - see Section 5's regarding a
 per-decision cost threshold relates to the cumulative B(a,r) budget.
 """
 from __future__ import annotations
@@ -94,7 +94,9 @@ class CAutonomyBoundaryService:
     def evaluate(self, subgoal: str, trust_state: float = 1.0) -> CBoundaryDecision:
         tool_name = SUBGOAL_TO_TOOL.get(subgoal)
         if tool_name is None:
-            return CBoundaryDecision(ERoute.REJECT, ["no tool mapping for subgoal"], subgoal, tool_name)
+            return CBoundaryDecision(ERoute.REJECT, 
+                                     ["no tool mapping for subgoal"], 
+                                     subgoal, tool_name)
 
         reasons: List[str] = []
         route = ERoute.PROCEED

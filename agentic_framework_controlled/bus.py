@@ -1,6 +1,6 @@
 """
 api_Controls/bus.py
-Phase 0: Observability & Metrics Bus (Paper 3, Figure 3 - "Observability
+Phase 0: Observability & Metrics Bus (Figure 3 - "Observability
 and Metrics Bus / Feeds operational risk metrics").
 
 Purely additive and framework-agnostic: this module never imports
@@ -107,7 +107,7 @@ class CObservabilityMetricsBus:
 
     def tool_blast_radius(self) -> Dict[str, Any]:
         """
-        Approximation of BlastRadius(a) (Paper 3 Sec. 5, proposed 5-tuple
+        Approximation of BlastRadius(a) (Sec. 5, proposed 5-tuple
         <R_a, D_a, S_a, I_a, P_a>) from ACP-5 authorise/deny events, using
         privilege-tier counts as a stand-in until a formal aggregation
         function is defined. Deliberately NOT conflated with the scalar
