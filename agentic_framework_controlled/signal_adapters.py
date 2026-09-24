@@ -46,7 +46,7 @@ import sys
 import contextlib
 from typing import Optional, Set
 
-from api_Controls.bus import CObservabilityMetricsBus
+from agentic_framework_controlled.bus import CObservabilityMetricsBus
 
 # config_agent.SUBGOAL_CATALOG is a public, intentional part of the
 # framework's config surface (not a private/internal detail) - the same

@@ -16,7 +16,7 @@ from typing import Dict, Optional
 from agentic_framework.layer_execution import CExecutionEnvironment, CExecutionRecord
 from agentic_framework.agent_tools import CToolRegistry
 
-from api_Controls.tool_access_gate import CToolAccessGate
+from agentic_framework_controlled.tool_access_gate import CToolAccessGate
 
 
 class CControlledExecutionEnvironment:

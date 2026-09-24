@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from typing import Optional
 
-from api_Controls.bus import CObservabilityMetricsBus
+from agentic_framework_controlled.bus import CObservabilityMetricsBus
 
 
 def render_readout(bus: CObservabilityMetricsBus, run_id: Optional[str] = None) -> str:

@@ -6,16 +6,16 @@ package - expiry, cascade-revoke, and breaker-trip cases, per the Phase
 """
 import time
 
-from api_Controls.bus import CObservabilityMetricsBus
-from api_Controls.signal_adapters import CSignalAdapters
-from api_Controls.autonomy_boundary import (
+from agentic_framework_controlled.bus import CObservabilityMetricsBus
+from agentic_framework_controlled.signal_adapters import CSignalAdapters
+from agentic_framework_controlled.autonomy_boundary import (
     CAutonomyBoundaryService, CAutonomyBoundaryConfig, ERoute,
 )
-from api_Controls.delegation_ledger import DelegationLedger
-from api_Controls.tool_access_gate import (
+from agentic_framework_controlled.delegation_ledger import DelegationLedger
+from agentic_framework_controlled.tool_access_gate import (
     CToolAccessGate, CToolAccessGateConfig, EPrivilegeTier,
 )
-from api_Controls.closed_loop import CClosedLoopPolicy
+from agentic_framework_controlled.closed_loop import CClosedLoopPolicy
 
 
 # ---------------------------------------------------------------------------
@@ -148,7 +148,7 @@ def test_acp2_marker_string_matches_source():
     detection silently stops working."""
     import inspect
     from agentic_framework.layer_reasoning import CTaskPlanningAgent
-    from api_Controls.signal_adapters import _FULL_ECHO_MARKER
+    from agentic_framework_controlled.signal_adapters import _FULL_ECHO_MARKER
 
     source = inspect.getsource(CTaskPlanningAgent.plan)
     assert _FULL_ECHO_MARKER in source

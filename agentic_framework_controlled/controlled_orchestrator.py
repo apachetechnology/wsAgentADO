@@ -22,8 +22,8 @@ from typing import Dict, List, Optional
 from config_agent import print_wrap
 from agentic_framework.layer_orchestrator import CAgenticOrchestrator
 
-from api_Controls.bus import CObservabilityMetricsBus
-from api_Controls.autonomy_boundary import (
+from agentic_framework_controlled.bus import CObservabilityMetricsBus
+from agentic_framework_controlled.autonomy_boundary import (
     CAutonomyBoundaryService, CAutonomyBoundaryConfig, ERoute,
 )
 

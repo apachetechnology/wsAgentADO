@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import Dict, List, Optional, Set
 
-from api_Controls.delegation_ledger import DelegationLedger
+from agentic_framework_controlled.delegation_ledger import DelegationLedger
 
 class EPrivilegeTier(IntEnum):
     READ_ONLY = 1

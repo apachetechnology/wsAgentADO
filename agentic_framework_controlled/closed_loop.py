@@ -19,8 +19,8 @@ from __future__ import annotations
 
 from typing import Dict, Optional, Tuple
 
-from api_Controls.bus import CObservabilityMetricsBus, CBusEvent
-from api_Controls.tool_access_gate import CToolAccessGate
+from agentic_framework_controlled.bus import CObservabilityMetricsBus, CBusEvent
+from agentic_framework_controlled.tool_access_gate import CToolAccessGate
 
 
 class CClosedLoopPolicy:
