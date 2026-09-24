@@ -152,9 +152,7 @@ def test_acp2_marker_string_matches_source():
     assert _FULL_ECHO_MARKER in source
 
 # ---------------------------------------------------------------------------
-# ACP-3: deterministic-fallback detection (see the known upstream bug note
-# in signal_adapters.py - the LLM-authored branch never actually runs in
-# the current commit, so this reads True for every real reflect() call)
+# ACP-3: deterministic-fallback detection
 # ---------------------------------------------------------------------------
 def test_acp3_adapter_flags_grounded_fallback():
     bus = CObservabilityMetricsBus()
