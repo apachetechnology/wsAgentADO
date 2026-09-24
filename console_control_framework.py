@@ -7,7 +7,7 @@ the wsAgenticAIFW package importable (run this from the repo root, with
 api_Controls/ dropped in alongside agentic_framework/, api_Finance/,
 api_server/, config_agent.py). 
 """
-from agentic_console import build_orchestrator
+from console_baseline_framework import build_orchestrator
 from config_agent import DEFAULT_ALLOWED_PERMISSIONS, ALL_PERMISSIONS
 
 from agentic_framework_controlled.bus import CObservabilityMetricsBus

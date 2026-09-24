@@ -18,6 +18,8 @@ from api_Finance.db_interface import CDBInterface
 from config_agent import DEFAULT_ALLOWED_PERMISSIONS, ALL_PERMISSIONS
 from agentic_framework.layer_orchestrator import CAgenticOrchestrator
 
+###################################################################################
+# 
 def build_orchestrator(allow_writes: bool = True) -> CAgenticOrchestrator:
     objOS = COllamaServer()
     if not objOS.start_server():
