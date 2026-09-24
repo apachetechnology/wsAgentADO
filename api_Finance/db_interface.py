@@ -23,7 +23,7 @@ class CDBInterface:
             self.mDB = CHoldingsDatabase()
             self.mObjFNAV = CFetchNAV()
         except Exception as e:
-            print(e.getMessage())
+            print(str(e))
 
     #----------------------------------------------------------------------
     # Helper function

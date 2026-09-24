@@ -268,7 +268,7 @@ class CPerformanceAnalyzer:
             fig.autofmt_xdate()
             fig.tight_layout()
         except Exception as e:
-            print(e.getMessage())
+            print(str(e))
 
         if save_path:
             fig.savefig(save_path, dpi=150)
