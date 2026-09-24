@@ -142,6 +142,16 @@ def test_acp2_adapter_no_false_positive_on_normal_plan():
     events = bus.events(event_type="acp2_plan_decision")
     assert events[0].payload["full_catalog_echo_detected"] is False
 
+def test_acp2_marker_string_matches_source():
+    """Regression guard: signal_adapters._FULL_ECHO_MARKER must stay a
+    substring of layer_reasoning.plan()'s actual print message, or ACP-2
+    detection silently stops working."""
+    import inspect
+    from agentic_framework.layer_reasoning import CTaskPlanningAgent
+    from api_Controls.signal_adapters import _FULL_ECHO_MARKER
+
+    source = inspect.getsource(CTaskPlanningAgent.plan)
+    assert _FULL_ECHO_MARKER in source
 
 # ---------------------------------------------------------------------------
 # ACP-3: deterministic-fallback detection (see the known upstream bug note

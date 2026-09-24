@@ -2,7 +2,7 @@
 
 ## ACP -> module map
 
-| **ACP** | **Table 1 mechanism** | **Implemented details** |
+| **ACP** | **Mechanism** | **Implemented details** |
 |---|---|---|
 | ACP-1 | Plausibility-bound NAV validation | `signal_adapters.py` wraps `update_navs`'s existing `rejected`/`failures` return values |
 | ACP-2 | SUBGOAL_CATALOG allow-list, rejects full-catalog echo | `signal_adapters.py` wraps `plan()`, detects the echo via its existing console print |

@@ -71,28 +71,6 @@ class CToolRegistry:
     # Tool implementations
     # ------------------------------------------------------------------ #
     def _register_all(self) -> None:
-
-        # def update_navs(owner_name: Optional[str] = None, **_) -> Dict:
-        #     rows = self.mDB.fetch_by_owner(owner_name) if owner_name else self.mDB.fetch_all()
-        #     updated, failures = 0, []
-        #     for row in rows:
-        #         fund_name = row["fund_name"]
-        #         nav_data = self.mFetcher.resolve_fund(fund_name)
-        #         if not nav_data or nav_data.get("nav") is None:
-        #             failures.append(fund_name)
-        #             continue
-        #         nav_latest = nav_data["nav"]
-        #         prev = row["nav_latest"]
-        #         if prev is not None:
-        #             self.mDB.update_nav_change(row["owner_name"], fund_name, nav_latest - prev)
-        #         self.mDB.update_nav_latest(row["owner_name"], fund_name, nav_latest)
-        #         if row["nav_highest"] is None or nav_latest > row["nav_highest"]:
-        #             self.mDB.update_nav_highest(row["owner_name"], fund_name, nav_latest)
-        #         if row["nav_lowest"] is None or nav_latest < row["nav_lowest"]:
-        #             self.mDB.update_nav_lowest(row["owner_name"], fund_name, nav_latest)
-        #         updated += 1
-        #     return {"updated": updated, "total": len(rows), "failures": failures}
-
         # Add to agent_tools.py inside _register_all(), replacing the current update_navs body
 
         MAX_DAILY_MOVE = 0.30  # 30% single-day move is implausible for these fund types

@@ -94,9 +94,17 @@ class CControlledOrchestrator:
             # baseline orchestrator does.
             dictStep = self.mTSA.setup(subgoal, strGoal, default_owner=owner_name)
             if dictStep is None:
-                self.mMemory.add_short_term(subgoal, tool="?", ok=False, note="no tool mapping")
+                self.mMemory.add_short_term(subgoal, tool="?", ok=False, 
+                                            note="no tool mapping")
                 continue
 
+            # Added by SG
+            if dictStep["tool"] == "add_fund" and subgoal not in extra_args:
+                self.mMemory.add_short_term(subgoal, tool=dictStep["tool"], ok=False,
+                                            note="add_fund requires extra_args={'add_fund': {...}}")
+                print_wrap(f"[ControlledOrchestrator] SKIPPED {subgoal}: missing required extra_args")
+                continue
+            
             dictStep["args"].update(extra_args.get(subgoal, {}))
             objExeRecord = self.mExecution.run_step(dictStep["tool"], dictStep["args"])
             self.mMemory.add_short_term(subgoal, dictStep["tool"], objExeRecord.mStrStatus == "ok",
@@ -149,6 +157,7 @@ class CControlledOrchestrator:
         dictStep = self.mTSA.setup(ctx["subgoal"], ctx["strGoal"], default_owner=ctx["owner_name"])
         if dictStep is None:
             return {"approved": True, "status": "no tool mapping"}
+        
         dictStep["args"].update(ctx["extra_args"].get(ctx["subgoal"], {}))
         objExeRecord = self.mExecution.run_step(dictStep["tool"], dictStep["args"])
         self.mMemory.add_short_term(ctx["subgoal"], dictStep["tool"], objExeRecord.mStrStatus == "ok",

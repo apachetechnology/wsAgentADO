@@ -80,11 +80,20 @@ class CAgenticOrchestrator:
         listSubgoals = self.mTPA.plan(strGoal, strContextSummary)
         print_wrap(f"[Orchestrator] Task assignment - subgoals: {listSubgoals or '(none identified)'}")
 
+        
         # 3-4. Reasoning/TSA + Action - set up and execute each subgoal.
         for subgoal in listSubgoals:
             dictStep = self.mTSA.setup(subgoal, strGoal, default_owner=owner_name)
             if dictStep is None:
-                self.mMemory.add_short_term(subgoal, tool="?", ok=False, note="no tool mapping")
+                self.mMemory.add_short_term(subgoal, tool="?", ok=False, 
+                                            note="no tool mapping")
+                continue
+
+            # Added by SG
+            if dictStep["tool"] == "add_fund" and subgoal not in extra_args:
+                self.mMemory.add_short_term(subgoal, tool=dictStep["tool"], ok=False,
+                                            note="add_fund requires extra_args={'add_fund': {...}}")
+                print_wrap(f"[ControlledOrchestrator] SKIPPED {subgoal}: missing required extra_args")
                 continue
 
             dictStep["args"].update(extra_args.get(subgoal, {}))

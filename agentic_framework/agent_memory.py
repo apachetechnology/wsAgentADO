@@ -2,8 +2,7 @@
 memory.py
 CAgentMemory - long-term (episodic) memory backing the Task Planning
 Agent's reflective loop, plus a lightweight short-term memory used by
-the Task Setup Agent ("Long-term Memory", "Short-term
-Memory", "Feedback Loops").
+the Task Setup Agent ("Long-term Memory", "Short-term Memory", "Feedback Loops").
 
 Long-term memory is a small sqlite log of past orchestrator runs
 (goal, plan, outcome). Recall is a plain keyword-overlap score rather
@@ -110,13 +109,12 @@ class CAgentMemory:
         return len(tokens_a & tokens_b) / len(tokens_a | tokens_b)
 
     def recall_similar(self, goal: str, top_n: int = 3) -> List[sqlite3.Row]:
-        """
-        Semantic-ish recall: rank past episodes by keyword overlap with
-        the new goal. Good enough to remind the TPA "you've handled
-        something like this before, and here's how it went."
-        """
+        # SG: Fixed the bug
+        #cur = self.mConn.execute(
+        #    "SELECT * FROM agent_episodes ORDER BY id DESC LIMIT 200"
+        #)
         cur = self.mConn.execute(
-            "SELECT * FROM agent_episodes ORDER BY id DESC LIMIT 200"
+            "SELECT * FROM agent_episodes WHERE quarantined = 0 ORDER BY id DESC LIMIT 200"
         )
         rows = cur.fetchall()
         scored = [(self._keyword_overlap(goal, r["goal"]), r) for r in rows]
@@ -150,8 +148,12 @@ class CAgentMemory:
         either prompt-injection steering or memory poisoning biasing recall.
         Returns a warning string, or None if within bounds.
         """
+        # SG: fixed the bug
+        #rows = self.mConn.execute(
+        #    "SELECT subgoals_json FROM agent_episodes ORDER BY id DESC LIMIT 200"
+        #).fetchall()
         rows = self.mConn.execute(
-            "SELECT subgoals_json FROM agent_episodes ORDER BY id DESC LIMIT 200"
+            "SELECT subgoals_json FROM agent_episodes WHERE quarantined = 0 ORDER BY id DESC LIMIT 200"
         ).fetchall()
         if len(rows) < min_episodes:
             return None
