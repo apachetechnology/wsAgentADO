@@ -165,8 +165,33 @@ class CToolRegistry:
             results = self.mFetcher.lookup_nav_by_keyword(keyword)
             return {"keyword": keyword, "results": results}
 
+        # def add_fund(owner_name: str, fund_name: str, holding_units: float,
+        #              nav_base: float, **_) -> Dict:
+        #     self.mDBInterface.AddNewBaseFund(owner_name, fund_name, holding_units, nav_base)
+        #     return {"added": fund_name, "owner_name": owner_name}
+
         def add_fund(owner_name: str, fund_name: str, holding_units: float,
-                     nav_base: float, **_) -> Dict:
+             nav_base: float, **_) -> Dict:
+            # --- Value validation (was missing entirely) ---
+            if holding_units <= 0:
+                return {"added": False, "error": f"holding_units must be > 0, got {holding_units}"}
+            if nav_base <= 0:
+                return {"added": False, "error": f"nav_base must be > 0, got {nav_base}"}
+
+            # --- Duplicate-row guard ---
+            # fetch_entry() is owner-scoped when owner_name is passed, so this
+            # correctly checks the same (owner_name, fund_name) pair the DB would
+            # otherwise happily insert a second row for.
+            existing = self.mDB.fetch_entry(fund_name, owner_name=owner_name)
+            if existing is not None:
+                return {
+                    "added": False,
+                    "error": f"'{fund_name}' already held by {owner_name} "
+                            f"(existing row: units={existing['holding_units']}, "
+                            f"nav_base={existing['nav_base']}). "
+                            f"Use a top-up/merge tool to add units, not add_fund.",
+                }
+
             self.mDBInterface.AddNewBaseFund(owner_name, fund_name, holding_units, nav_base)
             return {"added": fund_name, "owner_name": owner_name}
 

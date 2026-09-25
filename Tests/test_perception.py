@@ -46,3 +46,16 @@ def test_update_navs_accepts_plausible_move(monkeypatch, tool_registry):
     result = tool_registry.get("update_navs").mTool_func(owner_name="SG")
     assert result["updated"] == 1
     assert not result["rejected"]
+
+def test_add_fund_rejects_non_positive_values(tool_registry):
+    result = tool_registry.get("add_fund").mTool_func(
+        owner_name="SG", fund_name="NEW FUND", holding_units=-5, nav_base=10.0)
+    assert result["added"] is False
+    assert "holding_units" in result["error"]
+
+def test_add_fund_rejects_duplicate(tool_registry):
+    # tool_registry fixture already seeds owner_name="SG", fund_name="TEST FUND"
+    result = tool_registry.get("add_fund").mTool_func(
+        owner_name="SG", fund_name="TEST FUND", holding_units=50, nav_base=12.0)
+    assert result["added"] is False
+    assert "already held" in result["error"]

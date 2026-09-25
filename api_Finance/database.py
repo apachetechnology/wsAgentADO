@@ -104,6 +104,18 @@ class CHoldingsDatabase:
     # Insert
     # ------------------------------------------------------------------ #
     def insert_holding(self, entry: HoldingEntry) -> int:
+        if entry.holding_units <= 0:
+            raise ValueError(f"holding_units must be > 0, got {entry.holding_units}")
+        if entry.nav_base <= 0:
+            raise ValueError(f"nav_base must be > 0, got {entry.nav_base}")
+
+        existing = self.fetch_entry(entry.fund_name, owner_name=entry.owner_name)
+        if existing is not None:
+            raise ValueError(
+                f"'{entry.fund_name}' already held by {entry.owner_name} "
+                f"(row id {existing['id']}) - insert_holding() does not merge lots."
+            )
+        
         """Insert a single HoldingEntry. Returns the new row id."""
         sql = f"""
         INSERT INTO {config_db.TABLE_NAME}

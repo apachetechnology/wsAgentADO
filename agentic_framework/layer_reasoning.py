@@ -201,35 +201,6 @@ class CTaskPlanningAgent:
             return None
         return text
 
-    def reflect_old(self, goal: str, execution_log: List) -> Dict:
-        ok_count = sum(1 for r in execution_log if r.mStrStatus == "ok")
-        total = len(execution_log)
-        rule_based_success = total > 0 and ok_count == total
-
-        log_summary = "; ".join(
-            f"{r.mTool_Name}: {r.mStrStatus}" + (f" ({r.mError})" if r.mError else "") for r in execution_log
-        )
-
-        try:
-            messages = [
-                self.mOS.build_message(
-                    "system",
-                    "You are the Task Planning Agent reflecting on a completed run. "
-                    "In 1-2 sentences, summarize the outcome for the user in plain "
-                    "language. Do not give investment advice."
-                ),
-                self.mOS.build_message(
-                    "user", f"Goal: {goal}\nExecution log: {log_summary}"
-                ),
-            ]
-            summary = self.mOS.get_response(messages, aModel=self.mModel).strip()
-        except Exception:
-            summary = (f"Completed {ok_count}/{total} step(s) successfully."
-                       if total else "No applicable steps were identified for this goal.")
-
-        return {"summary": summary, "success": rule_based_success,
-                "steps_ok": ok_count, "steps_total": total}
-
     # Modified on 12/07/2026
     def reflect(self, goal: str, execution_log: List) -> Dict:
         ok_count = sum(1 for r in execution_log if r.mStrStatus == "ok")
