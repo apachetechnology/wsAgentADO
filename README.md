@@ -1,5 +1,13 @@
 # High Level Design
 
+## Design Primitives for Secure Agentic Systems
+
+| **Primitive** | **Methodology** | **Unit Test** | 
+|---|---|---|
+| **Bounded & scoped autonomy** | Run the same goal against **two separate `CAgenticOrchestrator` instances**: one built with `DEFAULT_ALLOWED_PERMISSIONS`, one with `ALL_PERMISSIONS` and diff the execution logs. | `allowed_permissions` is a **constructor-time** parameter (`CAgenticOrchestrator.__init__`), not a per-`run()` parameter - a single instance can't be re-parameterized per call. Baseline enforcement (`run_step()`'s permission diff) is genuinely fail-closed. `control_plane`'s `CToolAccessGate.authorize()` adds a *second*, per-tool-call gate on top (Phase 3), tested by `test_gate_denies_*` (5/5 passing). |
+| **Revocable & time-bounded delegation** | Reframe around `control_plane.DelegationLedger`: issue a `DelegationGrant` with `ttl_seconds` or `max_invocations`, show it expires; issue a child grant, revoke the parent, show cascade. | `test_delegation_expires_by_ttl`, `test_delegation_expires_by_invocation_count`, `test_delegation_cascade_revoke`, `test_delegation_revoke_does_not_affect_siblings` - all passing, no framework dependency. `reset_short_term()` at the top of every `run()` and the `SHORT_TERM_MEMORY_TURNS`-bounded deque are both verified accurate as originally stated. |
+| **Progressive privileges and impact-bounded access to tool-chains** | Classify all 9 registered tools into blast-radius tiers by permission set (e.g., `update_navs = WRITE + NETWORK = high`; `performance_review = READ + COMPUTE = low`) | All 9 tools' permission tags verified exactly: `update_navs={NETWORK,WRITE}`, `record_history={WRITE}`, `performance_review={READ,COMPUTE}`, `flag_risk={READ,COMPUTE}`, `portfolio_report={READ,COMPUTE}`, `fund_lookup={READ,NETWORK}`, `add_fund={WRITE}`, `rename_fund={WRITE}`, `plot_fund={READ,PLOT}`. Enforced at `run_step()`, genuinely fail-closed. Progressive tiering and the impact budget are enforced and tested one level up, at `control_plane.CToolAccessGate.authorize()`: `test_gate_denies_over_tier` shows a tool above the configured `max_tier` denied regardless of its permission tags; `test_gate_denies_over_impact_budget` shows the same tool/grant denied on a second call once cumulative cost exceeds the run's budget (both passing).  |
+
 ## ACP -> module map
 
 | **ACP** | **Mechanism** | **Implementation details** |
@@ -11,15 +19,7 @@
 | ACP-5 | Permission gate + delegation ledger + tool access gate | `delegation_ledger.py` (`DelegationLedger`/`DelegationGrant`) issues and revokes time-bounded grants; `tool_access_gate.py` (`CToolAccessGate`) evaluates the full `Authorize(a,t,r) = P^G^S^B^¬C` predicate; `controlled_execution.py` (`CControlledExecutionEnvironment`) calls the gate before forwarding to the real `run_step()` |
 | ACP-6 | `check_subgoal_bias()` diagnostic signal | `signal_adapters.py` wraps `CAgentMemory.record_episode()`; calls `check_subgoal_bias()` right after each recorded episode and publishes `acp6_bias_signal` when a skew warning is returned |
 
-## A. Design Primitives for Secure Agentic Systems
-
-| **Primitive** | **Methodology** | **Unit Test** | 
-|---|---|---|
-| **Bounded & scoped autonomy** | Run the same goal against **two separate `CAgenticOrchestrator` instances**: one built with `DEFAULT_ALLOWED_PERMISSIONS`, one with `ALL_PERMISSIONS` and diff the execution logs. | `allowed_permissions` is a **constructor-time** parameter (`CAgenticOrchestrator.__init__`), not a per-`run()` parameter - a single instance can't be re-parameterized per call. Baseline enforcement (`run_step()`'s permission diff) is genuinely fail-closed. `control_plane`'s `CToolAccessGate.authorize()` adds a *second*, per-tool-call gate on top (Phase 3), tested by `test_gate_denies_*` (5/5 passing). |
-| **Revocable & time-bounded delegation** | Reframe around `control_plane.DelegationLedger`: issue a `DelegationGrant` with `ttl_seconds` or `max_invocations`, show it expires; issue a child grant, revoke the parent, show cascade. | `test_delegation_expires_by_ttl`, `test_delegation_expires_by_invocation_count`, `test_delegation_cascade_revoke`, `test_delegation_revoke_does_not_affect_siblings` - all passing, no framework dependency. `reset_short_term()` at the top of every `run()` and the `SHORT_TERM_MEMORY_TURNS`-bounded deque are both verified accurate as originally stated. |
-| **Progressive privileges and impact-bounded access to tool-chains** | Classify all 9 registered tools into blast-radius tiers by permission set (e.g., `update_navs = WRITE + NETWORK = high`; `performance_review = READ + COMPUTE = low`) | All 9 tools' permission tags verified exactly: `update_navs={NETWORK,WRITE}`, `record_history={WRITE}`, `performance_review={READ,COMPUTE}`, `flag_risk={READ,COMPUTE}`, `portfolio_report={READ,COMPUTE}`, `fund_lookup={READ,NETWORK}`, `add_fund={WRITE}`, `rename_fund={WRITE}`, `plot_fund={READ,PLOT}`. Enforced at `run_step()`, genuinely fail-closed. Progressive tiering and the impact budget are enforced and tested one level up, at `control_plane.CToolAccessGate.authorize()`: `test_gate_denies_over_tier` shows a tool above the configured `max_tier` denied regardless of its permission tags; `test_gate_denies_over_impact_budget` shows the same tool/grant denied on a second call once cumulative cost exceeds the run's budget (both passing).  |
-
-## B. Agentic Control Points and Runtime Assurance
+## Agentic Control Points and Runtime Assurance
 
 | **Layer** | **ACP** | **Runtime Assurance Evidence** |
 |---|---|---|
