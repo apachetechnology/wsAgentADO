@@ -105,9 +105,9 @@ class CObservabilityMetricsBus:
             "avg_revoked_duration_s": (sum(durations) / len(durations)) if durations else None,
         }
 
-    def tool_blast_radius(self) -> Dict[str, Any]:
+    def tool_impact_scope(self) -> Dict[str, Any]:
         """
-        Approximation of BlastRadius(a) (Sec. 5, proposed 5-tuple
+        Approximation of ImpactScope(a) (Sec. 5, proposed 5-tuple
         <R_a, D_a, S_a, I_a, P_a>) from ACP-5 authorise/deny events, using
         privilege-tier counts as a stand-in until a formal aggregation
         function is defined. Deliberately NOT conflated with the scalar
@@ -167,7 +167,7 @@ class CObservabilityMetricsBus:
     def rollups(self) -> Dict[str, Any]:
         return {
             "delegation": self.delegation_depth_and_duration(),
-            "blast_radius": self.tool_blast_radius(),
+            "impact_scope": self.tool_impact_scope(),
             "autonomy_persistence": self.autonomy_persistence(),
             "escalation_latency": self.escalation_latency(),
         }

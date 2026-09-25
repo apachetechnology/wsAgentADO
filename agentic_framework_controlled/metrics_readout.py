@@ -3,7 +3,7 @@ api_Controls/metrics_readout.py
 STEP 6: renders CObservabilityMetricsBus.rollups() as the metrics
 readout referenced in Section 5 (Operational Risk Metrics -
 delegation duration/active grants, autonomy persistence, escalation
-latency, and the BlastRadius(a) approximation via ACP-5 tier counts).
+latency, and the ImpactScope(a) approximation via ACP-5 tier counts).
 Purely a formatting layer over bus.rollups(); no new metrics are
 computed here.
 """
@@ -21,7 +21,7 @@ def render_readout(bus: CObservabilityMetricsBus, run_id: Optional[str] = None) 
 
     sections = [
         ("Delegation (depth / duration / active grants)", rollups["delegation"]),
-        ("Tool blast-radius approximation (ACP-5 tier counts)", rollups["blast_radius"]),
+        ("Tool impact-scope approximation (ACP-5 tier counts)", rollups["impact_scope"]),
         ("Autonomy persistence (ACP-4)", rollups["autonomy_persistence"]),
         ("Escalation latency (ACP-4)", rollups["escalation_latency"]),
     ]

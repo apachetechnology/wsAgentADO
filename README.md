@@ -6,7 +6,7 @@
 |---|---|---|
 | **Bounded & scoped autonomy** | Run the same goal against **two separate `CAgenticOrchestrator` instances**: one built with `DEFAULT_ALLOWED_PERMISSIONS`, one with `ALL_PERMISSIONS` and diff the execution logs. | `allowed_permissions` is a **constructor-time** parameter (`CAgenticOrchestrator.__init__`), not a per-`run()` parameter - a single instance can't be re-parameterized per call. Baseline enforcement (`run_step()`'s permission diff) is genuinely fail-closed. `control_plane`'s `CToolAccessGate.authorize()` adds a *second*, per-tool-call gate on top (STEP 3), tested by `test_gate_denies_*` (5/5 passing). |
 | **Revocable & time-bounded delegation** | Reframe around `control_plane.DelegationLedger`: issue a `DelegationGrant` with `ttl_seconds` or `max_invocations`, show it expires; issue a child grant, revoke the parent, show cascade. | `test_delegation_expires_by_ttl`, `test_delegation_expires_by_invocation_count`, `test_delegation_cascade_revoke`, `test_delegation_revoke_does_not_affect_siblings` - all passing, no framework dependency. `reset_short_term()` at the top of every `run()` and the `SHORT_TERM_MEMORY_TURNS`-bounded deque are both verified accurate as originally stated. |
-| **Progressive privileges and impact-bounded access to tool-chains** | Classify all 9 registered tools into blast-radius tiers by permission set (e.g., `update_navs = WRITE + NETWORK = high`; `performance_review = READ + COMPUTE = low`) | All 9 tools' permission tags verified exactly: `update_navs={NETWORK,WRITE}`, `record_history={WRITE}`, `performance_review={READ,COMPUTE}`, `flag_risk={READ,COMPUTE}`, `portfolio_report={READ,COMPUTE}`, `fund_lookup={READ,NETWORK}`, `add_fund={WRITE}`, `rename_fund={WRITE}`, `plot_fund={READ,PLOT}`. Enforced at `run_step()`, genuinely fail-closed. Progressive tiering and the impact budget are enforced and tested one level up, at `control_plane.CToolAccessGate.authorize()`: `test_gate_denies_over_tier` shows a tool above the configured `max_tier` denied regardless of its permission tags; `test_gate_denies_over_impact_budget` shows the same tool/grant denied on a second call once cumulative cost exceeds the run's budget (both passing).  |
+| **Progressive privileges and impact-bounded access to tool-chains** | Classify all 9 registered tools according to permission set (e.g., `update_navs = WRITE + NETWORK = high`; `performance_review = READ + COMPUTE = low`) | All 9 tools' permission tags verified exactly: `update_navs={NETWORK,WRITE}`, `record_history={WRITE}`, `performance_review={READ,COMPUTE}`, `flag_risk={READ,COMPUTE}`, `portfolio_report={READ,COMPUTE}`, `fund_lookup={READ,NETWORK}`, `add_fund={WRITE}`, `rename_fund={WRITE}`, `plot_fund={READ,PLOT}`. Enforced at `run_step()`, genuinely fail-closed. Progressive tiering and the impact budget are enforced and tested one level up, at `control_plane.CToolAccessGate.authorize()`: `test_gate_denies_over_tier` shows a tool above the configured `max_tier` denied regardless of its permission tags; `test_gate_denies_over_impact_budget` shows the same tool/grant denied on a second call once cumulative cost exceeds the run's budget (both passing).  |
 
 ## ACP -> module map
 
@@ -51,14 +51,33 @@ Tests/
 
 ## FW Evaluation
 
-In brief `console_control_framework.py`.
+Step-by-step functioning of `console_control_framework.py` - It assembles all six ACPs on top of the baseline `AgenticAIFW` orchestrator.
 
-1. **Build baseline orchestrator** – calls `build_orchestrator()` from `console_baseline_framework.py`, with permission set decided by `allow_writes`.
-2. **STEP 0 – Bus** – creates `CObservabilityMetricsBus()`, the shared event log every ACP will publish to.
-3. **STEP 1 – ACP-1/2/3/6** – `CSignalAdapters(bus).attach(orchestrator)` wraps `update_navs`, `plan()`, `reflect()` and `record_episode()` in place, purely observational.
-4. **STEP 3 – ACP-5** – `DelegationLedger.bootstrap_from_allowed_permissions()` turns the constructor-time `allowed_permissions` set into one degenerate grant. `CToolAccessGate` is built on that ledger, and `orchestrator.mExecution` is replaced by `CControlledExecutionEnvironment`, so every `run_step()` now goes through `Authorise(a,t,r) = P^G^S^B^¬C` before the real execution.
-5. **STEP 4 – Closed loop** – `CClosedLoopPolicy(bus, gate)` subscribes to the bus, so repeated ACP-1 rejections or an ACP-6 bias signal trip a circuit breaker on the gate built in step 4.
-6. **STEP 2 – ACP-4** – the whole thing is wrapped in `CControlledOrchestrator`, which re-implements `run()` with the autonomy boundary check inserted before each `run_step()` call, and adds an escalation queue.
+**1. Build baseline orchestrator**
+`build_orchestrator(allow_writes=allow_writes)` from `console_baseline_framework.py` creates a plain `CAgenticOrchestrator` with either `DEFAULT_ALLOWED_PERMISSIONS` or `ALL_PERMISSIONS`.
+
+**2. STEP 0 - Bus**
+`CObservabilityMetricsBus()` is created. Every other ACP component publishes events onto this single shared bus.
+
+**3. STEP 1 - ACP-1/2/3/6 signal adapters**
+`CSignalAdapters(bus).attach(orchestrator)` wraps, in place:
+- `update_navs` (ACP-1)
+- `TPA.plan()` (ACP-2)
+- `TPA.reflect()` (ACP-3)
+- `memory.record_episode()` (ACP-6)
+
+This is purely observational - no enforcement yet, just publishing events.
+
+**4. STEP 3 - ACP-5 (delegation + tool gate)**
+- `DelegationLedger.bootstrap_from_allowed_permissions(permissions)` turns the constructor-time `allowed_permissions` set into a single degenerate `DelegationGrant`.
+- `CToolAccessGate` is built on that ledger.
+- `orchestrator.mExecution` is **replaced** with `CControlledExecutionEnvironment`, which wraps the real `run_step()` so `Authorize(a,t,r) = P^G^S^B^¬C` is checked before every tool call.
+
+**5. STEP 4 - Closed loop**
+`CClosedLoopPolicy(bus, gate)` subscribes to the bus. Repeated ACP-1 rejects or an ACP-6 bias signal now trip a circuit breaker on the gate built in step 4, turning diagnostic signals into enforcement.
+
+**6. STEP 2 - ACP-4 (autonomy boundary)**
+Everything built so far (instrumented + gated orchestrator) is wrapped in `CControlledOrchestrator`, which re-implements the `run()` loop with an autonomy-boundary check (irreversibility, cost, persistence limit) before each `run_step()`, plus an escalation queue for human-in-the-loop review.
 
 ## Testing
 

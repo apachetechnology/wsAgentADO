@@ -52,7 +52,7 @@ TOOL_PRIVILEGE_TIER: Dict[str, EPrivilegeTier] = {
 # autonomy_boundary.TOOL_COST_ESTIMATE but tracked separately: ACP-4's
 # cost threshold gates a single decision before execution, while ACP-5's
 # impact budget accumulates over a run/task/grant (Section 4.2; Paper 3
-# Sec. 5's open item on B(a,r) vs. the proposed BlastRadius(a) tuple).
+# Sec. 5's open item on B(a,r) vs. the proposed ImpactScope(a) tuple).
 TOOL_IMPACT_COST: Dict[str, float] = {
     "portfolio_report": 0.5, "fund_lookup": 0.5, "performance_review": 0.5,
     "flag_risk": 0.5, "plot_fund": 0.5, "record_history": 1.0,
