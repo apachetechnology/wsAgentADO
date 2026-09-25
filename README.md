@@ -83,7 +83,7 @@ Everything built so far (instrumented + gated orchestrator) is wrapped in `CCont
 
 | **File** | **What it does** |
 |---|---|
-|**`Tests/test_controlled_framework.py`**|Verified: 22/22 passing, standalone (no Ollama, no live DB, no network).|
-| **`Tests/conftest.py`** | Supplies the two pytest fixtures the other two test files need but that didn't exist anywhere in the repo before (`tool_registry`, `tpa`). Without this file, pytest can't even collect those tests - it errors immediately with "fixture not found." It builds a *real* `CToolRegistry`/`CTaskPlanningAgent` against temp-file databases, so the tests exercise your actual `update_navs()`/`plan()` logic rather than a mock of it, without ever touching your real `_DB/` files or the network. |
+| **`Tests/test_controlled_framework.py`**| Verified: 22/22 passing, standalone (no Ollama, no live DB, no network).|
+| **`Tests/conftest.py`** | It builds a *real* `CToolRegistry`/`CTaskPlanningAgent` against temp-file databases, so the tests exercise the actual `update_navs()`/`plan()` logic rather than a mock of it, without ever touching the real `_DB/` files or the network. |
 | **`Tests/test_perception.py`** | Tests that `update_navs()` rejects spoofed/implausible NAV feeds (a crash to near-zero, a 100,000x spike, a null value) - the ACP-1 mechanism. |
 | **`Tests/test_reasoning.py`** | Tests that `plan()` strips out attacker-controlled subgoals (e.g. `"delete_everything"`) that aren't in `SUBGOAL_CATALOG`, even when the (simulated) LLM response tries to inject them - the ACP-2 whitelist mechanism. |
