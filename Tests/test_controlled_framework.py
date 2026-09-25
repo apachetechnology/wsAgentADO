@@ -1,7 +1,7 @@
 """
 Tests/test_controlled_framework.py
-Phase 5: adversarial / edge-case tests for the additive api_Controls/
-package - expiry, cascade-revoke, and breaker-trip cases, per the Phase
+STEP 5: adversarial / edge-case tests for the additive api_Controls/
+package - expiry, cascade-revoke, and breaker-trip cases, per the STEP
 5 build plan.
 """
 import time
@@ -342,7 +342,7 @@ def test_gate_denies_when_circuit_breaker_tripped():
 
 
 # ---------------------------------------------------------------------------
-# Phase 4: closed loop - repeated ACP-1 rejects and an ACP-6 bias signal
+# STEP 4: closed loop - repeated ACP-1 rejects and an ACP-6 bias signal
 # trip the ACP-5 gate's circuit breakers
 # ---------------------------------------------------------------------------
 def test_closed_loop_trips_tool_breaker_after_repeated_acp1_rejects():

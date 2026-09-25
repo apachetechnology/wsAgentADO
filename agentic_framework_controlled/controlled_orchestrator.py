@@ -1,6 +1,6 @@
 """
 api_Controls/controlled_orchestrator.py
-Phase 2: CControlledOrchestrator composes an already-built
+STEP 2: CControlledOrchestrator composes an already-built
 CAgenticOrchestrator's public attributes (mTPA, mTSA, mExecution,
 mMemory, mPerception, mRegistry) and re-implements the run() loop with
 an ACP-4 autonomy-boundary evaluate() step inserted before

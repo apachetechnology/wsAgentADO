@@ -1,6 +1,6 @@
 """
 api_Controls/controlled_execution.py
-Phase 3: CControlledExecutionEnvironment composes an existing
+STEP 3: CControlledExecutionEnvironment composes an existing
 CExecutionEnvironment, calling CToolAccessGate.authorize() before
 forwarding to the real run_step(). On denial it returns a synthetic
 CExecutionRecord with mStrStatus="denied" - the same shape

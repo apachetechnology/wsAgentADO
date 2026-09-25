@@ -1,6 +1,6 @@
 """
 api_Controls/metrics_readout.py
-Phase 6: renders CObservabilityMetricsBus.rollups() as the metrics
+STEP 6: renders CObservabilityMetricsBus.rollups() as the metrics
 readout referenced in Section 5 (Operational Risk Metrics -
 delegation duration/active grants, autonomy persistence, escalation
 latency, and the BlastRadius(a) approximation via ACP-5 tier counts).

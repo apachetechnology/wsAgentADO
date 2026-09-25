@@ -1,6 +1,6 @@
 """
 api_Controls/delegation_ledger.py
-Phase 3: ACP-5 - Delegation Ledger (Fig. 3 "Delegation Ledger / Expiry &
+STEP 3: ACP-5 - Delegation Ledger (Fig. 3 "Delegation Ledger / Expiry &
 revocation"). Implements delegated authority as an explicit, queryable,
 revocable grant (Section 3.2), in place of the framework's own static
 `allowed_permissions: Set[str]` passed once to CExecutionEnvironment for

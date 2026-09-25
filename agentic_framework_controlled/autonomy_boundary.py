@@ -1,6 +1,6 @@
 """
 api_Controls/autonomy_boundary.py
-Phase 2: ACP-4 - Autonomy Boundary Service (orchestration-layer,
+STEP 2: ACP-4 - Autonomy Boundary Service (orchestration-layer,
 pre-execution control; Fig. 3 "Autonomy Boundary / Escalation & limits").
 
 Composes over the existing SUBGOAL_TO_TOOL mapping in

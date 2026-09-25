@@ -1,6 +1,6 @@
 """
 api_Controls/tool_access_gate.py
-Phase 3: ACP-5 - Tool Access Gate (Fig. 3 "Tool Access Gate / Tiers &
+STEP 3: ACP-5 - Tool Access Gate (Fig. 3 "Tool Access Gate / Tiers &
 breakers"). Implements Section 4.2's formal authorisation predicate
 literally:
 

@@ -1,6 +1,6 @@
 """
 api_Controls/signal_adapters.py
-Phase 1: ACP-1 / ACP-2 / ACP-3 / ACP-6 signal adapters.
+STEP 1: ACP-1 / ACP-2 / ACP-3 / ACP-6 signal adapters.
 
 Non-invasive instrumentation: every adapter here composes over an
 already-constructed CAgenticOrchestrator by substituting a wrapping

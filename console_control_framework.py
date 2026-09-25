@@ -27,14 +27,14 @@ def build_controlled_orchestrator(allow_writes: bool = True) -> CControlledOrche
     permissions = ALL_PERMISSIONS if allow_writes else DEFAULT_ALLOWED_PERMISSIONS
     orchestrator = build_orchestrator(allow_writes=allow_writes)
 
-    # 2. Phase 0 - the bus every other component reports to.
+    # 2. STEP 0 - the bus every other component reports to.
     bus = CObservabilityMetricsBus()
 
-    # 3. Phase 1 - ACP-1/2/3/6 signal adapters, wrapping the orchestrator's
+    # 3. STEP 1 - ACP-1/2/3/6 signal adapters, wrapping the orchestrator's
     #    own TPA/memory/registry in place.
     CSignalAdapters(bus).attach(orchestrator)
 
-    # 4. Phase 3 - ACP-5: reinterpret allowed_permissions as the ledger's
+    # 4. STEP 3 - ACP-5: reinterpret allowed_permissions as the ledger's
     #    first grant, then wrap mExecution so every tool call is gated.
     ledger = DelegationLedger(bus=bus)
     grant = ledger.bootstrap_from_allowed_permissions(permissions)
@@ -43,10 +43,10 @@ def build_controlled_orchestrator(allow_writes: bool = True) -> CControlledOrche
         execution=orchestrator.mExecution, gate=gate, grant_id=grant.grant_id,
     )
 
-    # 5. Phase 4 - close the loop: ACP-1/ACP-6 signals become ACP-5 breakers.
+    # 5. STEP 4 - close the loop: ACP-1/ACP-6 signals become ACP-5 breakers.
     CClosedLoopPolicy(bus, gate)
 
-    # 6. Phase 2 - ACP-4: wrap the whole run() loop with the autonomy
+    # 6. STEP 2 - ACP-4: wrap the whole run() loop with the autonomy
     #    boundary service, composing the now-instrumented, now-gated
     #    orchestrator built above.
     controlled = CControlledOrchestrator(orchestrator, bus, CAutonomyBoundaryConfig())

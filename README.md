@@ -4,7 +4,7 @@
 
 | **Primitive** | **Methodology** | **Unit Test** | 
 |---|---|---|
-| **Bounded & scoped autonomy** | Run the same goal against **two separate `CAgenticOrchestrator` instances**: one built with `DEFAULT_ALLOWED_PERMISSIONS`, one with `ALL_PERMISSIONS` and diff the execution logs. | `allowed_permissions` is a **constructor-time** parameter (`CAgenticOrchestrator.__init__`), not a per-`run()` parameter - a single instance can't be re-parameterized per call. Baseline enforcement (`run_step()`'s permission diff) is genuinely fail-closed. `control_plane`'s `CToolAccessGate.authorize()` adds a *second*, per-tool-call gate on top (Phase 3), tested by `test_gate_denies_*` (5/5 passing). |
+| **Bounded & scoped autonomy** | Run the same goal against **two separate `CAgenticOrchestrator` instances**: one built with `DEFAULT_ALLOWED_PERMISSIONS`, one with `ALL_PERMISSIONS` and diff the execution logs. | `allowed_permissions` is a **constructor-time** parameter (`CAgenticOrchestrator.__init__`), not a per-`run()` parameter - a single instance can't be re-parameterized per call. Baseline enforcement (`run_step()`'s permission diff) is genuinely fail-closed. `control_plane`'s `CToolAccessGate.authorize()` adds a *second*, per-tool-call gate on top (STEP 3), tested by `test_gate_denies_*` (5/5 passing). |
 | **Revocable & time-bounded delegation** | Reframe around `control_plane.DelegationLedger`: issue a `DelegationGrant` with `ttl_seconds` or `max_invocations`, show it expires; issue a child grant, revoke the parent, show cascade. | `test_delegation_expires_by_ttl`, `test_delegation_expires_by_invocation_count`, `test_delegation_cascade_revoke`, `test_delegation_revoke_does_not_affect_siblings` - all passing, no framework dependency. `reset_short_term()` at the top of every `run()` and the `SHORT_TERM_MEMORY_TURNS`-bounded deque are both verified accurate as originally stated. |
 | **Progressive privileges and impact-bounded access to tool-chains** | Classify all 9 registered tools into blast-radius tiers by permission set (e.g., `update_navs = WRITE + NETWORK = high`; `performance_review = READ + COMPUTE = low`) | All 9 tools' permission tags verified exactly: `update_navs={NETWORK,WRITE}`, `record_history={WRITE}`, `performance_review={READ,COMPUTE}`, `flag_risk={READ,COMPUTE}`, `portfolio_report={READ,COMPUTE}`, `fund_lookup={READ,NETWORK}`, `add_fund={WRITE}`, `rename_fund={WRITE}`, `plot_fund={READ,PLOT}`. Enforced at `run_step()`, genuinely fail-closed. Progressive tiering and the impact budget are enforced and tested one level up, at `control_plane.CToolAccessGate.authorize()`: `test_gate_denies_over_tier` shows a tool above the configured `max_tier` denied regardless of its permission tags; `test_gate_denies_over_impact_budget` shows the same tool/grant denied on a second call once cumulative cost exceeds the run's budget (both passing).  |
 
@@ -53,19 +53,18 @@ Tests/
 
 In brief `console_control_framework.py`.
 
-1. Build the baseline `CAgenticOrchestrator` exactly as `agentic_console.py` does.
-2. Create the bus (Phase 0).
-3. `CSignalAdapters(bus).attach(orchestrator)` - Phase 1 (ACP-1/2/3/6).
-4. `DelegationLedger.bootstrap_from_allowed_permissions(...)`, then wrap
-   `orchestrator.mExecution` in `CControlledExecutionEnvironment` - Phase 3 (ACP-5).
-5. `CClosedLoopPolicy(bus, gate)` - Phase 4.
-6. Wrap the whole thing in `CControlledOrchestrator` - Phase 2 (ACP-4).
+1. **Build baseline orchestrator** – calls `build_orchestrator()` from `console_baseline_framework.py`, with permission set decided by `allow_writes`.
+2. **STEP 0 – Bus** – creates `CObservabilityMetricsBus()`, the shared event log every ACP will publish to.
+3. **STEP 1 – ACP-1/2/3/6** – `CSignalAdapters(bus).attach(orchestrator)` wraps `update_navs`, `plan()`, `reflect()` and `record_episode()` in place, purely observational.
+4. **STEP 3 – ACP-5** – `DelegationLedger.bootstrap_from_allowed_permissions()` turns the constructor-time `allowed_permissions` set into one degenerate grant. `CToolAccessGate` is built on that ledger, and `orchestrator.mExecution` is replaced by `CControlledExecutionEnvironment`, so every `run_step()` now goes through `Authorise(a,t,r) = P^G^S^B^¬C` before the real execution.
+5. **STEP 4 – Closed loop** – `CClosedLoopPolicy(bus, gate)` subscribes to the bus, so repeated ACP-1 rejections or an ACP-6 bias signal trip a circuit breaker on the gate built in step 4.
+6. **STEP 2 – ACP-4** – the whole thing is wrapped in `CControlledOrchestrator`, which re-implements `run()` with the autonomy boundary check inserted before each `run_step()` call, and adds an escalation queue.
 
 ## Testing
 
 | **File** | **What it does** |
 |---|---|
-|**`Tests/test_controlled_framework.py`**|Verified:  - 22/22 passing, standalone (no Ollama, no live DB, no network).|
+|**`Tests/test_controlled_framework.py`**|Verified: 22/22 passing, standalone (no Ollama, no live DB, no network).|
 | **`Tests/conftest.py`** | Supplies the two pytest fixtures the other two test files need but that didn't exist anywhere in the repo before (`tool_registry`, `tpa`). Without this file, pytest can't even collect those tests - it errors immediately with "fixture not found." It builds a *real* `CToolRegistry`/`CTaskPlanningAgent` against temp-file databases, so the tests exercise your actual `update_navs()`/`plan()` logic rather than a mock of it, without ever touching your real `_DB/` files or the network. |
 | **`Tests/test_perception.py`** | Tests that `update_navs()` rejects spoofed/implausible NAV feeds (a crash to near-zero, a 100,000x spike, a null value) - the ACP-1 mechanism. |
 | **`Tests/test_reasoning.py`** | Tests that `plan()` strips out attacker-controlled subgoals (e.g. `"delete_everything"`) that aren't in `SUBGOAL_CATALOG`, even when the (simulated) LLM response tries to inject them - the ACP-2 whitelist mechanism. |

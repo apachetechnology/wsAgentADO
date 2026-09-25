@@ -1,6 +1,6 @@
 """
 api_Controls/closed_loop.py
-Phase 4: closes the assurance loop described in Section 4.2's closing
+STEP 4: closes the assurance loop described in Section 4.2's closing
 paragraph - ACP-1 rejections and the ACP-6 bias signal become C(a,r)
 circuit-breaker triggers on the ACP-5 Tool Access Gate, instead of being
 merely logged to the bus (Table 1, ACP-6: "the baseline produces a

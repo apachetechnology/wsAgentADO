@@ -1,6 +1,6 @@
 """
 api_Controls/bus.py
-Phase 0: Observability & Metrics Bus (Figure 3 - "Observability
+STEP 0: Observability & Metrics Bus (Figure 3 - "Observability
 and Metrics Bus / Feeds operational risk metrics").
 
 Purely additive and framework-agnostic: this module never imports
