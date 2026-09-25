@@ -2,14 +2,14 @@
 
 ## ACP -> module map
 
-| **ACP** | **Mechanism** | **Implemented details** |
+| **ACP** | **Mechanism** | **Implementation details** |
 |---|---|---|
-| ACP-1 | Plausibility-bound NAV validation | `signal_adapters.py` wraps `update_navs`'s existing `rejected`/`failures` return values |
-| ACP-2 | SUBGOAL_CATALOG allow-list, rejects full-catalog echo | `signal_adapters.py` wraps `plan()`, detects the echo via its existing console print |
-| ACP-3 | Grounded-facts constraint, reject ungrounded currency | `signal_adapters.py` wraps `reflect()` |
-| ACP-4 | Autonomy boundary service | `autonomy_boundary.py` + `controlled_orchestrator.py` |
-| ACP-5 | Permission gate + delegation ledger + tool access gate | `delegation_ledger.py` + `tool_access_gate.py` + `controlled_execution.py` |
-| ACP-6 | `check_subgoal_bias()` diagnostic signal | `signal_adapters.py` wraps `record_episode()` and calls it |
+| ACP-1 | Plausibility-bound NAV validation | `signal_adapters.py` wraps `update_navs`'s `mTool_func`; publishes an `acp1_reject` bus event whenever the tool's own `rejected`/`failures` lists are non-empty, without altering the tool's return value |
+| ACP-2 | SUBGOAL_CATALOG allow-list, rejects full-catalog echo | `signal_adapters.py` wraps `CTaskPlanningAgent.plan()`; tees stdout to detect the existing "entire subgoal catalog" console marker, then publishes `acp2_plan_decision` with the echo flag and whether all returned subgoals are in-catalog |
+| ACP-3 | Grounded-facts constraint, reject ungrounded currency | `signal_adapters.py` wraps `CTaskPlanningAgent.reflect()`; publishes `acp3_reflection` flagging whether the deterministic fallback summary was used and whether a `$`/USD/dollars pattern still slipped through |
+| ACP-4 | Autonomy boundary service | `autonomy_boundary.py` (`CAutonomyBoundaryService`) evaluates each proposed subgoal against irreversibility, cost, and persistence-limit boundaries; `controlled_orchestrator.py` (`CControlledOrchestrator`) calls it before every `run_step()` and routes PROCEED/ESCALATE/DEFER/REJECT accordingly |
+| ACP-5 | Permission gate + delegation ledger + tool access gate | `delegation_ledger.py` (`DelegationLedger`/`DelegationGrant`) issues and revokes time-bounded grants; `tool_access_gate.py` (`CToolAccessGate`) evaluates the full `Authorize(a,t,r) = P^G^S^B^¬C` predicate; `controlled_execution.py` (`CControlledExecutionEnvironment`) calls the gate before forwarding to the real `run_step()` |
+| ACP-6 | `check_subgoal_bias()` diagnostic signal | `signal_adapters.py` wraps `CAgentMemory.record_episode()`; calls `check_subgoal_bias()` right after each recorded episode and publishes `acp6_bias_signal` when a skew warning is returned |
 
 ## A. Design Primitives for Secure Agentic Systems
 
