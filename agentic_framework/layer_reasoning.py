@@ -30,7 +30,7 @@ from config_agent import MODEL_TPA, MODEL_TSA, SUBGOAL_CATALOG
 from agentic_framework.agent_memory import CAgentMemory
 from agentic_framework.agent_tools import SUBGOAL_TO_TOOL
 
-CURRENCY_SYMBOL = "\u20b9"  # ₹ — all figures in this system are INR
+CURRENCY_SYMBOL = "\u20b9"  # ₹ - all figures in this system are INR
 
 ##################################################################################
 def _find_json_span(text: str, open_ch: str, close_ch: str) -> Optional[str]:
@@ -189,10 +189,10 @@ class CTaskPlanningAgent:
     # Reflection (meta-reasoning / self-critique over the execution log)
     # ------------------------------------------------------------------ #
     @staticmethod
-    def _reject_ungrounded_currency(text: str) -> Optional[str]:
+    def _reject_unverified_currency(text: str) -> Optional[str]:
         """
         A $ or 'USD' anywhere in the reflection means the model attached a
-        number to a currency it was never given — that number wasn't in
+        number to a currency it was never given - that number wasn't in
         `facts` either, so it's fabricated, not just mislabeled. Discard the
         whole response rather than relabel the currency, which would just
         launder a hallucinated figure into a plausible-looking rupee one.
@@ -222,7 +222,7 @@ class CTaskPlanningAgent:
                     "You are the Task Planning Agent reflecting on a completed run. "
                     "In 1-2 sentences, summarize the outcome for the user in plain "
                     "language. Do not give investment advice. "
-                    "All monetary figures in this system are in Indian Rupees — "
+                    "All monetary figures in this system are in Indian Rupees - "
                     "always use the \u20b9 symbol, never $ or USD. "
                     "Use ONLY the numbers given to you in the 'Facts' list below. "
                     "Do not calculate, estimate, or invent any NAV, price, "
@@ -236,7 +236,7 @@ class CTaskPlanningAgent:
                 ),
             ]
             raw = self.mOS.get_response(messages, aModel=self.mModel).strip()
-            summary = self._reject_ungrounded_currency(raw)
+            summary = self._reject_unverified_currency(raw)
         except Exception:
             summary = None
 
