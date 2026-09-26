@@ -17,6 +17,10 @@ from agentic_framework_controlled.tool_access_gate import (
 )
 from agentic_framework_controlled.closed_loop import CClosedLoopPolicy
 
+from agentic_framework.layer_execution import CExecutionEnvironment
+from agentic_framework_controlled.controlled_execution import CControlledExecutionEnvironment
+from agentic_framework_controlled.metrics_readout import render_readout
+
 # ---------------------------------------------------------------------------
 # Minimal stand-ins matching the exact shapes CSignalAdapters reads/writes.
 # ---------------------------------------------------------------------------
@@ -340,6 +344,31 @@ def test_gate_denies_when_circuit_breaker_tripped():
     assert not result.authorized
     assert result.c_circuit_breaker_active
 
+def test_run_id_propagates_to_acp5_authorize_events(tool_registry):
+    """
+    Regression guard for the run_id wiring gap: CControlledOrchestrator.run()
+    must set self.mExecution.run_id BEFORE any run_step() call, or every
+    acp5_authorize event silently reverts to run_id=None and Table 3's
+    Tool impact-scope rollup goes back to showing zeros for a real run.
+    """
+    bus = CObservabilityMetricsBus()
+    ledger = DelegationLedger(bus=bus)
+    grant = ledger.issue("op", "orch", {"READ", "COMPUTE"})
+    gate = CToolAccessGate(ledger, bus=bus)
+
+    execution = CExecutionEnvironment(tool_registry, {"READ", "COMPUTE"})
+    controlled = CControlledExecutionEnvironment(
+        execution=execution, gate=gate, grant_id=grant.grant_id,
+    )
+
+    # Mirrors what CControlledOrchestrator.run() does after generating run_id
+    controlled.run_id = "run-abc123"
+
+    controlled.run_step("portfolio_report", {"owner_name": "SG"})
+
+    events = bus.events(event_type="acp5_authorize")
+    assert len(events) == 1
+    assert events[0].run_id == "run-abc123"   # fails back to None if the wiring regresses
 
 # ---------------------------------------------------------------------------
 # STEP 4: closed loop - repeated ACP-1 rejects and an ACP-6 bias signal
@@ -372,3 +401,23 @@ def test_closed_loop_trips_run_breaker_on_acp6_bias():
     result = gate.authorize("fund_lookup", {"READ", "NETWORK"}, {"READ", "NETWORK"}, grant.grant_id, run_id="rY")
     assert not result.authorized
     assert result.c_circuit_breaker_active
+
+def test_render_readout_delegation_is_session_scoped_not_run_scoped():
+    """
+    Regression guard: delegation grants are issued before any run_id exists
+    (bootstrap_from_allowed_permissions runs at orchestrator build time), so
+    render_readout's delegation section must read from the unscoped bus, not
+    the run-scoped view - otherwise a real grant with run_id=None disappears
+    from every per-run readout even though it's genuinely active.
+    """
+    bus = CObservabilityMetricsBus()
+    ledger = DelegationLedger(bus=bus)
+    ledger.issue("operator", "orchestrator", {"READ", "COMPUTE"})  # run_id=None, as in real bootstrap
+
+    bus.publish("acp4_decision", acp="ACP-4", run_id="run-xyz",
+                subgoal="portfolio_report", route="proceed")
+
+    readout = render_readout(bus, run_id="run-xyz")
+
+    assert '"issued_total": 1' in readout
+    assert '"active_grants": 1' in readout
