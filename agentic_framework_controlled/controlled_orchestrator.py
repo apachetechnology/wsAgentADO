@@ -49,6 +49,7 @@ class CControlledOrchestrator:
         run_id = uuid.uuid4().hex[:12]
         extra_args = extra_args or {}
         self.mExecution.reset_state()
+        self.mExecution.run_id = run_id
         self.mMemory.reset_short_term()
         self.boundary.reset()
 
