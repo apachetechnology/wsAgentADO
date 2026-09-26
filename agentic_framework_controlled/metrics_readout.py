@@ -17,14 +17,14 @@ from agentic_framework_controlled.bus import CObservabilityMetricsBus
 
 def render_readout(bus: CObservabilityMetricsBus, run_id: Optional[str] = None) -> str:
     target = bus.scoped(run_id) if run_id else bus
-    rollups = target.rollups()
 
     sections = [
-        ("Delegation (depth / duration / active grants)", rollups["delegation"]),
-        ("Tool impact-scope approximation (ACP-5 tier counts)", rollups["impact_scope"]),
-        ("Autonomy persistence (ACP-4)", rollups["autonomy_persistence"]),
-        ("Escalation latency (ACP-4)", rollups["escalation_latency"]),
+        ("Delegation (session-wide, depth / duration / active grants)", bus.delegation_depth_and_duration()),
+        ("Tool impact-scope approximation (ACP-5 tier counts)", target.tool_impact_scope()),
+        ("Autonomy persistence (ACP-4)", target.autonomy_persistence()),
+        ("Escalation latency (ACP-4)", target.escalation_latency()),
     ]
+    
     title = f"# Operational Risk Metrics readout{f' - run {run_id}' if run_id else ''}"
     lines = [title, ""]
     for heading, data in sections:
